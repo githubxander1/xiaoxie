@@ -12,7 +12,7 @@ namespace RestBuddy {
     private readonly Dictionary<string,CheckBox> toggles=new Dictionary<string,CheckBox>();
     private readonly Dictionary<string,NumericUpDown> minutes=new Dictionary<string,NumericUpDown>();
     private readonly Dictionary<string,string> custom;
-    private CheckBox work,week,lunch,idle,fullscreen,sound,startup;
+    private CheckBox work,week,lunch,idle,fullscreen,sound,startup,workCheck;
     private DateTimePicker begin,end,lbegin,lend;private int editing=-1;
     internal Settings(Buddy value){
       buddy=value;custom=new Dictionary<string,string>(buddy.Options.CustomMessages);
@@ -26,6 +26,7 @@ namespace RestBuddy {
       tone=Combo(new[]{"温柔","俏皮","简短"},buddy.Options.Tone);companion.Controls.Add(Row("说话语气",tone));
       frequency=Combo(new[]{"轻声","适中","积极"},buddy.Options.Frequency);companion.Controls.Add(Row("关怀频率",frequency));
       mode=Combo(new[]{"展开小猫","收成小点","隐藏到托盘"},buddy.Options.Mode=="compact"?"收成小点":buddy.Options.Mode=="hidden"?"隐藏到托盘":"展开小猫");companion.Controls.Add(Row("显示方式",mode));
+      workCheck=Check("每天开工时检查工位",buddy.Options.WorkStartCheck);companion.Controls.Add(workCheck);
       FlowLayoutPanel care=FlowPage(tabs,"关怀");
       TableLayoutPanel grid=new TableLayoutPanel{AutoSize=true,Width=350,ColumnCount=3};grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,85));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,45));
       grid.Controls.Add(Style.Label("关怀主题",9),0,0);grid.Controls.Add(Style.Label("参考分钟",9),1,0);int row=1;
@@ -75,7 +76,7 @@ namespace RestBuddy {
       if(work.Checked&&begin.Value.ToString("HH:mm")==end.Value.ToString("HH:mm")){MessageBox.Show("工作开始和结束时间不能相同。","小歇");return;}
       if(lunch.Checked&&lbegin.Value.ToString("HH:mm")==lend.Value.ToString("HH:mm")){MessageBox.Show("午休开始和结束时间不能相同。","小歇");return;}
       if(newsEnabled.Checked&&!ContentService.SafeUrl(newsUrl.Text.Trim())){MessageBox.Show("请填写 http 或 https 的 RSS / 热榜地址。","小歇");return;}
-      Stash();Options o=buddy.Options;o.AutoNews=autoNews.Checked;o.NewsMinutes=(int)newsMinutes.Value;o.NewsJitter=newsJitter.Checked;o.FinanceMix=newsPreset.SelectedIndex==0;o.ShareEnabled=shares.Checked;o.ShareMinutes=(int)shareMinutes.Value;o.OnlineQuotes=onlineQuotes.Checked;o.NewsEnabled=newsEnabled.Checked;o.QuoteKind=quoteKind.Text;o.NewsUrl=newsUrl.Text.Trim();o.PetName=String.IsNullOrWhiteSpace(name.Text)?"小歇":name.Text.Trim();o.Tone=tone.Text;o.Frequency=frequency.Text;o.Mode=mode.SelectedIndex==1?"compact":mode.SelectedIndex==2?"hidden":"expanded";o.CustomMessages=new Dictionary<string,string>(custom);
+      Stash();Options o=buddy.Options;o.WorkStartCheck=workCheck.Checked;o.AutoNews=autoNews.Checked;o.NewsMinutes=(int)newsMinutes.Value;o.NewsJitter=newsJitter.Checked;o.FinanceMix=newsPreset.SelectedIndex==0;o.ShareEnabled=shares.Checked;o.ShareMinutes=(int)shareMinutes.Value;o.OnlineQuotes=onlineQuotes.Checked;o.NewsEnabled=newsEnabled.Checked;o.QuoteKind=quoteKind.Text;o.NewsUrl=newsUrl.Text.Trim();o.PetName=String.IsNullOrWhiteSpace(name.Text)?"小歇":name.Text.Trim();o.Tone=tone.Text;o.Frequency=frequency.Text;o.Mode=mode.SelectedIndex==1?"compact":mode.SelectedIndex==2?"hidden":"expanded";o.CustomMessages=new Dictionary<string,string>(custom);
       foreach(Rule r in o.Rules){r.Enabled=toggles[r.Key].Checked;r.Minutes=(int)minutes[r.Key].Value;}
       o.WorkHours=work.Checked;o.Weekdays=week.Checked;o.Lunch=lunch.Checked;o.IdlePause=idle.Checked;o.FullscreenPause=fullscreen.Checked;o.Sound=sound.Checked;o.Start=begin.Value.ToString("HH:mm");o.End=end.Value.ToString("HH:mm");o.LunchStart=lbegin.Value.ToString("HH:mm");o.LunchEnd=lend.Value.ToString("HH:mm");
       if(!buddy.Save())return;

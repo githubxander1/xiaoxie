@@ -23,11 +23,11 @@ namespace RestBuddy {
     internal void AddActive(double seconds){if(seconds<=0||seconds>30)return;foreach(Rule r in options.Rules)if(r.Enabled)effort[r.Key]+=seconds;}
     internal double MinutesFor(string key){return effort.ContainsKey(key)?effort[key]/60:0;}
     internal bool HasDue {get{return options.Rules.Any(r=>r.Enabled&&effort[r.Key]>=threshold[r.Key]);}}
-    internal bool HasUrgent(DateTime now){return options.Rules.Any(r=>r.Enabled&&(r.Key=="eyes"||r.Key=="walk"||r.Key=="rest")&&effort[r.Key]>=threshold[r.Key]*1.7&&now>=offered[r.Key]);}
-    internal void Rest(DateTime now){foreach(string key in new[]{"eyes","blink","posture","walk","stretch","rest","hands","feet"})if(effort.ContainsKey(key))Renew(key);CooldownUntil=now.AddMinutes(4);BusyCount=0;}
-    internal void ScreenBreak(DateTime now){foreach(string key in new[]{"eyes","blink"})if(effort.ContainsKey(key))Renew(key);ResumeBuffer(now);}
+    internal bool HasUrgent(DateTime now){return options.Rules.Any(r=>r.Enabled&&(r.Key=="eyes"||r.Key=="rest")&&effort[r.Key]>=threshold[r.Key]*1.7&&now>=offered[r.Key]);}
+    internal void Rest(DateTime now){foreach(string key in new[]{"eyes","posture","rest"})if(effort.ContainsKey(key))Renew(key);CooldownUntil=now.AddMinutes(4);BusyCount=0;}
+    internal void ScreenBreak(DateTime now){if(effort.ContainsKey("eyes"))Renew("eyes");ResumeBuffer(now);}
     internal void Drank(DateTime now){Renew("water");CooldownUntil=now.AddMinutes(2);feedbackBuffer=CooldownUntil;BusyCount=0;}
-    internal void Completed(string key,DateTime now){if(effort.ContainsKey(key))Renew(key);CooldownUntil=now.AddMinutes(2);feedbackBuffer=CooldownUntil;BusyCount=0;}
+    internal void Completed(string key,DateTime now){if(key=="rest"){Rest(now);feedbackBuffer=now.AddMinutes(2);return;}if(effort.ContainsKey(key))Renew(key);CooldownUntil=now.AddMinutes(2);feedbackBuffer=CooldownUntil;BusyCount=0;}
     internal void ResumeBuffer(DateTime now){if(CooldownUntil<now.AddMinutes(2))CooldownUntil=now.AddMinutes(2);}
     internal void Quiet(DateTime now,int minutes){QuietUntil=now.AddMinutes(minutes);CooldownUntil=QuietUntil;}
     internal void Resume(DateTime now){QuietUntil=DateTime.MinValue;CooldownUntil=now.AddMinutes(2);}
@@ -35,7 +35,7 @@ namespace RestBuddy {
     // Not answering a bubble is not evidence of resting or asking for an hour of silence.
     internal void Ignored(DateTime now){if(CooldownUntil<now.AddMinutes(2))CooldownUntil=now.AddMinutes(2);}
     internal void Going(DateTime now){Quiet(now,5);}
-    private double Priority(string key){return key=="eyes"?0.6:key=="walk"||key=="rest"?0.45:key=="blink"?0.25:0;}
+    private double Priority(string key){return key=="eyes"?0.6:key=="rest"?0.45:0;}
     private double Rank(Rule r,DateTime now){double ratio=effort[r.Key]/threshold[r.Key];return Math.Min(4,lastOffered[r.Key]==DateTime.MinValue?ratio:(now-lastOffered[r.Key]).TotalSeconds/threshold[r.Key])+Priority(r.Key)+(shown[r.Key]==0&&ratio>=1?1.5:0);}
     internal List<Rule> Suggest(DateTime now){
       if(now<QuietUntil||now<feedbackBuffer)return null;
@@ -45,9 +45,9 @@ namespace RestBuddy {
       if(!ordinaryReady&&!(eyeOverdue&&now>=lastPrompt.AddMinutes(2)))return null;
       Rule primary=eyes??options.Rules.Where(r=>r.Enabled&&effort[r.Key]>=threshold[r.Key]&&now>=offered[r.Key]).OrderByDescending(r=>Rank(r,now)).FirstOrDefault();
       if(primary==null)return null;List<Rule> result=new List<Rule>{primary};string second=null;
-      if(primary.Key=="walk"||primary.Key=="rest"||primary.Key=="stretch")second=Eligible("water",0.8,now)?"water":Eligible("eyes",0.85,now)?"eyes":null;
-      if(primary.Key=="water")second=Eligible("walk",0.85,now)?"walk":null;
-      if(primary.Key=="eyes"){Rule companion=options.Rules.Where(r=>r.Key!="eyes"&&r.Key!="toilet"&&Eligible(r.Key,0.85,now)).OrderByDescending(r=>Rank(r,now)).FirstOrDefault();second=companion==null?null:companion.Key;}
+      if(primary.Key=="rest")second=Eligible("water",0.8,now)?"water":null;
+      if(primary.Key=="water")second=Eligible("rest",0.85,now)?"rest":null;
+      if(primary.Key=="eyes"){Rule companion=options.Rules.Where(r=>r.Key!="eyes"&&Eligible(r.Key,0.85,now)).OrderByDescending(r=>Rank(r,now)).FirstOrDefault();second=companion==null?null:companion.Key;}
       if(second!=null)result.Add(options.Rules.First(r=>r.Key==second));
       foreach(Rule r in result){shown[r.Key]++;lastOffered[r.Key]=now;offered[r.Key]=now.AddMinutes(r.Key=="eyes"?r.Minutes:Math.Max(5,Math.Min(25,r.Minutes*0.65)));}
       lastPrompt=now;CooldownUntil=now.AddMinutes(Spacing);return result;

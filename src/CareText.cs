@@ -8,34 +8,20 @@ namespace RestBuddy {
     internal CareText(Options value){options=value;}
     private string Pick(string key,string[] lines){int n=random.Next(lines.Length);int previous;if(lines.Length>1&&last.TryGetValue(key,out previous)&&n==previous)n=(n+1)%lines.Length;last[key]=n;return lines[n].Replace("{名字}",options.PetName);}
     internal string Message(List<Rule> rules){
-      List<string> custom=new List<string>();foreach(Rule rule in rules){string text;if(options.CustomMessages.TryGetValue(rule.Key,out text)&&!String.IsNullOrWhiteSpace(text)){string[] lines=text.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim()).Where(x=>x.Length>0).ToArray();if(lines.Length>0)custom.Add(Pick("custom"+rule.Key,lines));}}
-      if(custom.Count>0){if(rules.Count==1)return custom[0];return String.Join("\n",rules.Select(r=>Message(new List<Rule>{r})));}
-      bool water=rules.Any(r=>r.Key=="water"),move=rules.Any(r=>new[]{"walk","rest","stretch"}.Contains(r.Key));
-      if(water&&move)return Pick("combined"+options.Tone,options.Tone=="俏皮"?new[]{"水杯和椅子都在等你：一个想见你，一个想放假。起来接点水，顺便走走？","给工作按个小暂停吧。你去接水走两步，我替你守着桌面。"}:options.Tone=="简短"?new[]{"起来走走，顺便接点水。","接杯水，离开座位片刻。"}:new[]{"这段忙完了吗？起来接点水，顺便走两步。","陪我歇一小会儿吧。去接点水，也让身体换个姿势。"});
-      string key=rules[0].Key;string[] choices;
-      bool playful=options.Tone=="俏皮",brief=options.Tone=="简短";
+      if(rules==null||rules.Count==0)return "找个合适的时机，照顾一下自己。";
+      bool hasCustom=rules.Any(r=>options.CustomMessages.ContainsKey(r.Key)&&!String.IsNullOrWhiteSpace(options.CustomMessages[r.Key]));
+      if(hasCustom){if(rules.Count>1)return String.Join("\n",rules.Select(r=>Message(new List<Rule>{r})));string[] custom=options.CustomMessages[rules[0].Key].Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim()).Where(x=>x.Length>0).ToArray();if(custom.Length>0)return Pick("custom"+rules[0].Key,custom);}
+      bool playful=options.Tone=="俏皮",brief=options.Tone=="简短";string key=rules[0].Key;string[] choices;
+      if(rules.Any(r=>r.Key=="rest")&&rules.Any(r=>r.Key=="water"))return Pick("combined"+options.Tone,brief?new[]{"离屏休息五分钟，顺便按需喝点水。","起来走走，歇五分钟，也照顾一下饮水需要。"}:playful?new[]{"水杯想见你，椅子想放假。起来接点水，留五分钟走走歇歇？","你去接水走走，离屏歇五分钟。我替你看着桌面。"}:new[]{"这段忙完了吗？起来走一走，给自己五分钟离屏休息，顺便按需喝点水。","陪自己歇五分钟吧。离开座位走走，也看看要不要补点水。"});
       switch(key){
-        case "eyes":choices=brief?new[]{"看看远处，让眼睛歇会。","先把视线移开屏幕吧。"}:playful?new[]{"屏幕交给我看着，你去看看窗外？","眼睛今天也很努力，给它放个小假吧。"}:new[]{"先把目光移开屏幕，看看远处大约二十秒，好吗？","这段看完，就让眼睛歇一会儿吧。","窗外有什么新鲜事吗？把目光借给远处一小会儿。"};break;
-        case "posture":choices=brief?new[]{"放松肩膀，换个坐姿。","调整坐姿，让身体舒服些。"}:playful?new[]{"检查一下肩膀有没有悄悄耸起来？放松它，再换个舒服的坐姿。","和椅子重新谈谈坐姿吧，找个舒服的位置。"}:new[]{"肩膀还放松吗？换个舒服的坐姿吧。","忙的时候容易忘记身体。轻轻放松肩膀，调整一下坐姿。"};break;
-        case "water":choices=brief?new[]{"想喝点水吗？","方便的话，喝几口水。"}:playful?new[]{"水杯发来一条好友申请，要不要见见它？","工作的小间隙，要不要顺手端一下水杯？"}:new[]{"手边有水吗？方便的话喝几口，按自己的需要来。","忙完手上这一步，想不想喝点水？","我在这儿陪着你。也记得照顾一下自己，喝点水吧。"};break;
-        case "walk":choices=brief?new[]{"起身走两步吧。","离开座位活动一下。"}:playful?new[]{"椅子申请短暂独处，你起来走两步？","给桌面一次想你的机会，起身转一圈吧。"}:new[]{"坐着忙了有一阵。方便的话，起来走两步吧。","事情可以稍微等一等。站起来换换位置，陪自己歇一小会儿。"};break;
-        case "stretch":choices=brief?new[]{"轻轻活动肩膀和手腕。","换个姿势，舒展一下。"}:playful?new[]{"让手指和前臂轻轻舒展一下，舒服就好，不用用力掰拉。","键盘先交给我，给肩膀和手腕一点活动时间？"}:new[]{"试着轻轻活动肩膀和手腕，做到舒服就好。","让双手暂时离开键盘，轻轻舒展一下吧。"};break;
-        case "rest":choices=brief?new[]{"休息几分钟再继续吧。","放下手头的事，歇一会。"}:playful?new[]{"你的电量也值得被照顾。去歇会儿，我负责看桌面。","这场和工作的拉锯战，可以先按一下暂停。"}:new[]{"给自己留几分钟离屏休息吧，放下鼠标，让手和眼睛都缓一缓。","这段告一段落的话，就完整歇一会儿吧。我在这里等你。"};break;
-        case "blink":choices=brief?new[]{"自然完整地眨几次眼睛。","眼睛也歇一下，轻轻眨眼。"}:playful?new[]{"和我一起慢慢眨几次眼睛？让眼睑自然合上，不用挤眼。","这次互动叫：眨眨眼。轻轻合上，再自然睁开就好。"}:new[]{"看屏幕时容易忘记眨眼。轻轻、完整地眨几次吧。","让眼睑自然合上再睁开，轻轻眨几次眼睛。","趁这个小间隙，自然地眨眨眼，再看看远处。"};break;
-        case "hands":choices=brief?new[]{"松开鼠标，轻轻活动手指。","双手离开键盘片刻。"}:playful?new[]{"鼠标也想歇会儿。松开它，让手指自然张开再放松。","手指今天也在出力。暂停敲字，给它们一点活动时间吧。"}:new[]{"让双手暂时离开键盘和鼠标，轻轻张开手指，再放松。","留意一下手腕有没有一直折着。放松双手，让手腕自然些。","轻轻活动手指和前臂，到舒服的位置就好，不要用力掰拉。"};break;
-        case "feet":choices=brief?new[]{"双脚有支撑，换个舒服的位置。","背部靠稳，双脚放松落地。"}:playful?new[]{"椅子下面的小世界也照顾一下：让双脚踏实落地，换换位置。","脚脚想找个落脚点。地面或稳固脚踏都可以，别一直悬着。"}:new[]{"看看双脚是否稳稳放在地面或脚踏上，找个放松的位置。","背部有支撑，双脚也有支撑。坐久了就轻轻换换位置。","检查一下腿和脚有没有一直紧绷，换个舒服的位置吧。"};break;
-        default:choices=brief?new[]{"如有需要，去趟洗手间。","照顾一下自己的需要吧。"}:new[]{"如果有需要，就去趟洗手间吧，手上的事可以等一下。","也问问身体有没有别的需要。想去洗手间的话，现在可以歇一会。"};break;
+        case "eyes":choices=brief?new[]{"看看远处二十秒，自然眨几次眼睛。","目光离开屏幕二十秒，也轻轻眨眨眼。"}:playful?new[]{"屏幕交给我看着，你看看远处二十秒，再自然眨几次眼睛？","眼睛的小假期到了。看看远方，轻轻眨眼，不用盯着我倒计时。","和小猫做个眨眼约定：先看看远处，再轻轻合上眼睑，自然睁开。"}:new[]{"让目光离开屏幕，看看远处大约二十秒，也自然完整地眨几次眼睛。","这段看完，给眼睛一点远方吧。看看远处二十秒，再轻轻眨眨眼。","抬眼看看远处，好吗？目光放远片刻，也记得自然眨眼。"};break;
+        case "posture":choices=brief?new[]{"放松肩膀，换个舒服的坐姿。","双手离开键盘片刻，轻轻活动手指。","背部靠稳，双脚有支撑。"}:playful?new[]{"检查一下肩膀有没有悄悄耸起来？放松它，找个舒服的位置。","鼠标也想歇会。松开它，让手指轻轻张开再放松。","椅子下面也照顾一下：让双脚踏实落地，背部舒服地靠稳。","爪爪舒展时间。手腕放自然，轻轻活动手指和前臂就好。"}:new[]{"肩膀还放松吗？换个舒服的坐姿，背部靠稳，双脚有支撑。","双手暂时离开键盘和鼠标，轻轻张开手指，再放松。","留意一下手腕有没有一直折着，轻轻活动手指和前臂，做到舒服就好。","检查一下背部和双脚的支撑，也让肩膀松一松。","舒服的姿势也可以换一换。轻轻调整椅背或双脚的位置吧。"};break;
+        case "rest":choices=brief?new[]{"起身走走，离屏休息五分钟。","放下电脑，留五分钟给自己走动和休息。"}:playful?new[]{"椅子申请五分钟独处。你去走走歇会儿，我负责看桌面。","给工作按个小暂停。离开座位走两步，歇五分钟再回来。","小猫值班，人类休息。起来走一走，给自己五分钟离屏时间吧。"}:new[]{"这段告一段落的话，起来走一走，留五分钟给自己离屏休息。","放下鼠标，离开座位走走吧。歇五分钟，再慢慢继续。","方便的话，给自己一次完整的小休息。起身走动，离屏歇五分钟。"};break;
+        case "water":choices=brief?new[]{"想喝点水吗？按自己的需要来。","方便的话喝几口水。"}:playful?new[]{"水杯发来一条好友申请，要不要见见它？","工作的小间隙，要不要顺手端一下水杯？"}:new[]{"手边有水吗？方便的话喝几口，按自己的需要来。","忙完手上这一步，想不想喝点水？","也照顾一下自己的饮水需要吧，有需要就喝几口。"};break;
+        default:return "找个合适的时机，照顾一下自己。";
       }
       string message=Pick(key+options.Tone,choices);
-      if(rules.Count>1&&rules[1].Key=="posture")message+=" 顺便放松一下肩膀。";
-      if(rules.Count>1&&rules[1].Key=="eyes")message+=" 也看看远处。";
-      if(rules.Count>1&&rules[1].Key=="blink")message+=" 顺便自然完整地眨几次眼睛。";
-      if(rules.Count>1&&rules[1].Key=="hands")message+=" 也让双手离开键盘，轻轻放松一下。";
-      if(rules.Count>1&&rules[1].Key=="feet")message+=" 顺便让双脚有支撑，换个舒服的位置。";
-      if(rules.Count>1&&rules[1].Key=="walk")message+=" 方便的话，也起身走一走。";
-      if(rules.Count>1&&rules[1].Key=="stretch")message+=" 也可以轻轻活动手指和前臂。";
-      if(rules.Count>1&&rules[1].Key=="rest")message+=" 如果这一段忙完了，可以离屏休息几分钟。";
-      if(rules.Count>1&&rules[1].Key=="water")message+=" 有需要的话，顺便喝几口水。";
+      if(rules.Count>1){string second=rules[1].Key;if(second=="posture")message+=" 顺便放松肩膀和双手，检查一下支撑。";else if(second=="eyes")message+=" 也看看远处，自然眨几次眼睛。";else if(second=="rest")message+=" 方便的话，也起身走走，离屏休息五分钟。";else if(second=="water")message+=" 有需要的话，顺便喝几口水。";}
       return message;
     }
     internal string Play(string kind){
@@ -49,7 +35,7 @@ namespace RestBuddy {
       if(action=="rested")return "收到，按你刚才的休息反馈更新啦。我晚一点再提醒。";
       if(action=="water")return "收到，记下这次饮水反馈了。我晚点再问。";
       if(action=="going")return "好，先歇五分钟。我会安静等你；休息好了也可以告诉我。";
-      if(action=="completed")return "收到，这个小动作完成啦。我会单独更新这一项。";
+      if(action=="completed")return "收到，这次完成啦。相关的关怀计时已经更新。";
       return Pick("hello",options.Tone=="简短"?new[]{"我在。需要安静陪伴，还是歇会儿？","照顾好自己，工作慢慢来。"}:new[]{"我在呢。想歇一会儿，还是让我安静陪着？","今天也在认真忙呀。你想歇会儿的时候，来找我就好。","摸摸收到。希望你今天工作顺利，也留一点时间给自己。"});
     }
   }

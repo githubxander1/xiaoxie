@@ -11,7 +11,7 @@ using Microsoft.Win32;
 
 [assembly:System.Runtime.CompilerServices.InternalsVisibleTo("RestBuddy.Checks")]
 [assembly:System.Reflection.AssemblyTitle("小歇")]
-[assembly:System.Reflection.AssemblyVersion("0.4.1.0")]
+[assembly:System.Reflection.AssemblyVersion("0.5.0.0")]
 namespace RestBuddy {
   public sealed class Rule {
     public string Key,Name,Message;public int Minutes;public bool Enabled;
@@ -20,17 +20,12 @@ namespace RestBuddy {
   }
   public sealed class Options {
     public List<Rule> Rules=new List<Rule>{
-      new Rule("eyes","护眼远眺","把目光移向远处，离开屏幕片刻。",20,true),
-      new Rule("posture","调整坐姿","放松肩膀，调整一下坐姿。",30,true),
-      new Rule("water","喝水","喝几口水，按需补充。",60,true),
-      new Rule("walk","起身走动","起身走一走，暂时离开座位。",45,true),
-      new Rule("stretch","小运动","轻轻活动肩膀和手腕，量力而行。",60,true),
-      new Rule("rest","较长休息","放下手头的事，休息几分钟吧。",60,true),
-      new Rule("toilet","如厕","如有需要，去趟洗手间。",120,false),
-      new Rule("blink","自然眨眼","自然完整地眨几次眼睛。",15,true),
-      new Rule("hands","双手放松","暂时放下鼠标，轻轻张开双手。",40,true),
-      new Rule("feet","双脚与支撑","让双脚有支撑，换个舒服的位置。",50,true)};
-    public int Version=5;
+      new Rule("eyes","用眼休息","看看远处，自然眨几次眼睛。",20,true),
+      new Rule("posture","姿势放松","放松肩膀和双手，检查背部与双脚支撑。",30,true),
+      new Rule("rest","离座休息","起身走走，给自己五分钟离屏休息。",60,true),
+      new Rule("water","饮水","按自己的需要，喝几口水。",60,true)};
+    public int Version=6;
+    public bool WorkStartCheck=false;public string WorkCheckDate="";
     public bool AutoNews=true,NewsJitter=true,FinanceMix=true;public int NewsMinutes=10;
     public bool ShareEnabled=true,OnlineQuotes=true,NewsEnabled=true;
     public int ShareMinutes=90;
@@ -52,11 +47,8 @@ namespace RestBuddy {
       if(File.Exists(path))try{value=Json.Deserialize<Options>(File.ReadAllText(path));}catch{
         try{value=Json.Deserialize<Options>(File.ReadAllText(path+".bak"));}catch{Error="设置无法读取，已使用默认值";}
       }
-      if(value==null)value=new Options();Options defaults=new Options();
-      if(value.Rules==null)value.Rules=defaults.Rules;
-      foreach(Rule r in defaults.Rules){Rule found=value.Rules.FirstOrDefault(x=>x!=null&&x.Key==r.Key);if(found!=null){r.Enabled=found.Enabled;r.Minutes=Math.Max(1,Math.Min(480,found.Minutes));}}
-      value.Rules=defaults.Rules;
-      if(value.CustomMessages==null)value.CustomMessages=new Dictionary<string,string>();
+      if(value==null)value=new Options();
+      CareCatalog.Normalize(value);
       if(String.IsNullOrWhiteSpace(value.PetName))value.PetName="小歇";value.PetName=value.PetName.Trim().Substring(0,Math.Min(12,value.PetName.Trim().Length));
       if(!new[]{"温柔","俏皮","简短"}.Contains(value.Tone))value.Tone="温柔";
       if(!new[]{"轻声","适中","积极"}.Contains(value.Frequency))value.Frequency="适中";
@@ -66,7 +58,7 @@ namespace RestBuddy {
       if(!new[]{"随机","诗词","文学","动漫","影视"}.Contains(value.QuoteKind))value.QuoteKind="随机";
       if(!ContentService.SafeUrl(value.NewsUrl))value.NewsUrl="https://www.ithome.com/rss/";
       if(value.Version<4){value.AutoNews=true;value.NewsMinutes=10;value.NewsJitter=true;if(value.NewsUrl==NewsFeeds.IT){value.NewsUrl=NewsFeeds.Jin10;value.FinanceMix=true;}else value.FinanceMix=false;}
-      value.NewsMinutes=Math.Max(2,Math.Min(180,value.NewsMinutes));value.Version=5;
+      value.NewsMinutes=Math.Max(2,Math.Min(180,value.NewsMinutes));value.Version=6;
       if(!ValidTime(value.Start))value.Start="09:00";if(!ValidTime(value.End))value.End="18:00";
       if(!ValidTime(value.LunchStart))value.LunchStart="12:00";if(!ValidTime(value.LunchEnd))value.LunchEnd="13:30";
       return value;

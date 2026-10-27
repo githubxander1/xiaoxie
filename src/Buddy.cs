@@ -40,7 +40,7 @@ namespace RestBuddy {
       menu.Items.Add(new ToolStripSeparator());menu.Items.Add("和我说句话",null,(s,e)=>Interact());menu.Items.Add("示范关怀",null,(s,e)=>Preview());
       ToolStripMenuItem play=new ToolStripMenuItem("陪我一下");play.DropDownItems.Add("摸摸小猫",null,(s,e)=>Play("pet"));play.DropDownItems.Add("一起伸懒腰",null,(s,e)=>Play("stretch"));play.DropDownItems.Add("逗我一下",null,(s,e)=>Play("joke"));play.DropDownItems.Add("给我打打气",null,(s,e)=>Play("cheer"));menu.Items.Add(play);
       menu.Items.Add("随机一句 / 台词",null,(s,e)=>ShareContent(false,true));menu.Items.Add("读条新闻",null,(s,e)=>ShareContent(true,true));
-      ToolStripMenuItem exercise=new ToolStripMenuItem("健康小练习");foreach(Rule r in Options.Rules.Where(x=>x.Key!="water"&&x.Key!="toilet")){string key=r.Key;exercise.DropDownItems.Add(r.Name,null,(s,e)=>StartCoach(key));}menu.Items.Add(exercise);menu.Items.Add("关怀状态",null,(s,e)=>ShowStatus());
+      ToolStripMenuItem exercise=new ToolStripMenuItem("健康小练习");foreach(Rule r in Options.Rules.Where(x=>x.Key!="water")){string key=r.Key;exercise.DropDownItems.Add(r.Name,null,(s,e)=>StartCoach(key));}menu.Items.Add(exercise);menu.Items.Add("关怀状态",null,(s,e)=>ShowStatus());menu.Items.Add("工位检查",null,(s,e)=>ShowWorkCheck());
       menu.Items.Add("我刚休息过",null,(s,e)=>Feedback("rested"));menu.Items.Add("我刚喝过水",null,(s,e)=>Feedback("water"));menu.Items.Add("安静一小时",null,(s,e)=>Pause());menu.Items.Add("继续关怀",null,(s,e)=>Resume());
       menu.Items.Add(new ToolStripSeparator());menu.Items.Add("关怀设置",null,(s,e)=>OpenSettings());menu.Items.Add("退出",null,(s,e)=>ExitThread());return menu;
     }
@@ -74,6 +74,7 @@ namespace RestBuddy {
       if(settings!=null&&!settings.IsDisposed)settings.State.Text=state;
       Pet.SetMood(!active||now<Engine.QuietUntil);
       if(!active||now<Engine.QuietUntil||(bubble!=null&&!bubble.IsDisposed)||(coach!=null&&!coach.IsDisposed)||(settings!=null&&!settings.IsDisposed&&settings.Visible))return;
+      if(Options.WorkStartCheck&&Options.WorkCheckDate!=DateTime.Today.ToString("yyyy-MM-dd")){Options.WorkCheckDate=DateTime.Today.ToString("yyyy-MM-dd");Persist();ShowWorkCheck();return;}
       List<Rule> rules=Engine.Suggest(now);if(rules!=null){ShowCare(rules,false);return;}
       if(now>=autoContentAfter&&autoNews.IsDue(now)&&!fetching){ShareContent(true,false);return;}
       if(Options.ShareEnabled&&!Engine.HasUrgent(now)&&!fetching&&now>=autoContentAfter&&shareActive>=Options.ShareMinutes*60)ShareContent(false,false);
@@ -84,14 +85,14 @@ namespace RestBuddy {
       if(e.Reason==SessionSwitchReason.SessionLock){locked=true;lockAt=DateTime.UtcNow;HideBubble();if(coach!=null&&!coach.IsDisposed)coach.Close();}
       if(e.Reason==SessionSwitchReason.SessionUnlock){locked=false;if((DateTime.UtcNow-lockAt).TotalMinutes>=3)Engine.ScreenBreak(DateTime.UtcNow);else Engine.ResumeBuffer(DateTime.UtcNow);}
     }
-    internal void Preview(){ShowCare(new List<Rule>{Options.Rules.First(r=>r.Key=="walk"),Options.Rules.First(r=>r.Key=="water")},true);}
+    internal void Preview(){ShowCare(new List<Rule>{Options.Rules.First(r=>r.Key=="rest"),Options.Rules.First(r=>r.Key=="water")},true);}
     internal void PreviewTopic(string key){ShowCare(new List<Rule>{Options.Rules.First(r=>r.Key==key)},true);}
-    internal static string ExerciseKey(List<Rule> rules){Rule exercise=rules.FirstOrDefault(r=>r.Key!="water"&&r.Key!="toilet");return exercise==null?"eyes":exercise.Key;}
+    internal static string ExerciseKey(List<Rule> rules){Rule exercise=rules.FirstOrDefault(r=>r.Key=="rest")??rules.FirstOrDefault(r=>r.Key!="water");return exercise==null?"eyes":exercise.Key;}
     private void ShowCare(List<Rule> rules,bool preview){
       if(!preview)autoContentAfter=DateTime.UtcNow.AddMinutes(2);
-      bool waterOnly=rules.Count==1&&rules[0].Key=="water";Rule primary=rules[0];
-      string first=waterOnly?"water":primary.Key=="toilet"?"going":"coach";
-      SpeechAction[] actions={new SpeechAction(waterOnly?"喝过水了":first=="going"?"去歇会":"一起做一下",first),new SpeechAction("做到了","done"),new SpeechAction("现在忙","busy")};
+      bool waterOnly=rules.Count==1&&rules[0].Key=="water";
+      string first=waterOnly?"water":"coach";
+      SpeechAction[] actions={new SpeechAction(waterOnly?"喝过水了":"一起做一下",first),new SpeechAction("做到了","done"),new SpeechAction("现在忙","busy")};
       ShowSpeech(Words.Message(rules),preview?"示范关怀":"陪你歇一下",actions,action=>{
         if(action=="ignored"){if(!preview)Engine.Ignored(DateTime.UtcNow);HideBubble();return;}
         if(action=="coach"){StartCoach(ExerciseKey(rules));return;}
@@ -103,14 +104,15 @@ namespace RestBuddy {
     internal void Interact(){ShowSpeech(Words.Reply("hello",Engine.BusyCount),"我在呢",new[]{new SpeechAction("摸摸","pet"),new SpeechAction("新鲜事","fresh"),new SpeechAction("健康小练习","practice")},action=>{
       if(action=="pet")Play("pet");else if(action=="fresh")FreshMenu();else if(action=="practice")StartCoach("eyes");else HideBubble();
     },36000);}
-    internal void Play(string kind){Pet.React(kind);ShowSpeech(Words.Play(kind),"陪我一下",new[]{new SpeechAction("再来一句","again"),new SpeechAction("一起活动","exercise"),new SpeechAction("收起","close")},action=>{if(action=="again")Play(kind);else if(action=="exercise")StartCoach("stretch");else HideBubble();},36000);}
+    internal void Play(string kind){Pet.React(kind);ShowSpeech(Words.Play(kind),"陪我一下",new[]{new SpeechAction("再来一句","again"),new SpeechAction("一起活动","exercise"),new SpeechAction("收起","close")},action=>{if(action=="again")Play(kind);else if(action=="exercise")StartCoach("posture");else HideBubble();},36000);}
     private void FreshMenu(){ShowSpeech("想听一句台词，看看新闻，还是让我逗你笑一下？","来点新鲜的",new[]{new SpeechAction("一句话","quote"),new SpeechAction("新闻","news"),new SpeechAction("逗我一下","joke")},action=>{if(action=="quote")ShareContent(false,true);else if(action=="news")ShareContent(true,true);else if(action=="joke")Play("joke");else HideBubble();},36000);}
+    internal void ShowWorkCheck(){ShowSpeech("开工前照顾一下自己的位置：屏幕有没有刺眼反光？背部和双脚有没有支撑？水杯放在顺手的位置了吗？","工位检查",new[]{new SpeechAction("检查好了","close"),new SpeechAction("今天先略过","close")},a=>HideBubble(),36000);}
     internal void ShowStatus(){ShowSpeech((Options.AutoNews&&Options.NewsEnabled?"下次自动快讯："+autoNews.DueUtc.ToLocalTime().ToString("HH:mm")+"（在可提醒时段展示）\n\n":"自动快讯已关闭\n\n")+Engine.Report()+"\n\n以上是本次会话的电脑使用参考，不代表检测到了身体状态。\n参考值到达后会综合选择关怀；新闻和语录会给健康关怀让路。","关怀状态",new[]{new SpeechAction("刚休息过","rested"),new SpeechAction("刚喝过水","water"),new SpeechAction("设置","settings")},action=>{if(action=="settings"){HideBubble();OpenSettings();}else if(action=="ignored")HideBubble();else Feedback(action);},60000);}
     internal void StartCoach(string key){
       HideBubble();if(coach!=null&&!coach.IsDisposed){coach.Show();return;}
       Rule rule=Options.Rules.FirstOrDefault(r=>r.Key==key);if(rule==null)return;
       if(Engine.QuietUntil<DateTime.UtcNow.AddMinutes(1))Engine.Quiet(DateTime.UtcNow,1);
-      Pet.React("stretch");coach=new Coach(key,rule.Name,()=>{Engine.Completed(key,DateTime.UtcNow);if(key=="eyes")Engine.Completed("blink",DateTime.UtcNow);Feedback("completed");});coach.Show();
+      Pet.React("stretch");coach=new Coach(key,rule.Name,()=>{Engine.Completed(key,DateTime.UtcNow);Feedback("completed");});coach.Show();
     }
     private async Task<ContentItem> FetchNews(bool recent){
       string url=Options.FinanceMix?(random.Next(2)==0?NewsFeeds.Jin10:NewsFeeds.Wallstreet):Options.NewsUrl;
