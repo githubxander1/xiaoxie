@@ -9,7 +9,7 @@ namespace RestBuddy {
     private string Pick(string key,string[] lines){int n=random.Next(lines.Length);int previous;if(lines.Length>1&&last.TryGetValue(key,out previous)&&n==previous)n=(n+1)%lines.Length;last[key]=n;return lines[n].Replace("{名字}",options.PetName);}
     internal string Message(List<Rule> rules){
       List<string> custom=new List<string>();foreach(Rule rule in rules){string text;if(options.CustomMessages.TryGetValue(rule.Key,out text)&&!String.IsNullOrWhiteSpace(text)){string[] lines=text.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim()).Where(x=>x.Length>0).ToArray();if(lines.Length>0)custom.Add(Pick("custom"+rule.Key,lines));}}
-      if(custom.Count>0)return String.Join("\n",custom);
+      if(custom.Count>0){if(rules.Count==1)return custom[0];return String.Join("\n",rules.Select(r=>Message(new List<Rule>{r})));}
       bool water=rules.Any(r=>r.Key=="water"),move=rules.Any(r=>new[]{"walk","rest","stretch"}.Contains(r.Key));
       if(water&&move)return Pick("combined"+options.Tone,options.Tone=="俏皮"?new[]{"水杯和椅子都在等你：一个想见你，一个想放假。起来接点水，顺便走走？","给工作按个小暂停吧。你去接水走两步，我替你守着桌面。"}:options.Tone=="简短"?new[]{"起来走走，顺便接点水。","接杯水，离开座位片刻。"}:new[]{"这段忙完了吗？起来接点水，顺便走两步。","陪我歇一小会儿吧。去接点水，也让身体换个姿势。"});
       string key=rules[0].Key;string[] choices;
@@ -30,6 +30,12 @@ namespace RestBuddy {
       if(rules.Count>1&&rules[1].Key=="posture")message+=" 顺便放松一下肩膀。";
       if(rules.Count>1&&rules[1].Key=="eyes")message+=" 也看看远处。";
       if(rules.Count>1&&rules[1].Key=="blink")message+=" 顺便自然完整地眨几次眼睛。";
+      if(rules.Count>1&&rules[1].Key=="hands")message+=" 也让双手离开键盘，轻轻放松一下。";
+      if(rules.Count>1&&rules[1].Key=="feet")message+=" 顺便让双脚有支撑，换个舒服的位置。";
+      if(rules.Count>1&&rules[1].Key=="walk")message+=" 方便的话，也起身走一走。";
+      if(rules.Count>1&&rules[1].Key=="stretch")message+=" 也可以轻轻活动手指和前臂。";
+      if(rules.Count>1&&rules[1].Key=="rest")message+=" 如果这一段忙完了，可以离屏休息几分钟。";
+      if(rules.Count>1&&rules[1].Key=="water")message+=" 有需要的话，顺便喝几口水。";
       return message;
     }
     internal string Play(string kind){

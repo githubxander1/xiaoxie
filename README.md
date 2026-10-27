@@ -10,7 +10,7 @@
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4)
 ![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.8-512BD4)
-![Version](https://img.shields.io/badge/version-0.4.0-527A59)
+![Version](https://img.shields.io/badge/version-0.4.1-527A59)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 [快速开始](#快速开始) · [功能](#功能) · [自动快讯](#自动快讯) · [源码构建](#源码构建) · [数据与隐私](#数据与隐私)
@@ -118,6 +118,12 @@
 
 财经来源为**第三方 RSS 中转**，并非金十官方实时 API，可能有缓存、延迟或临时不可用。内容保留来源与链接，点击后由浏览器打开。接入说明与参考项目见 [SOURCES.md](SOURCES.md)。
 
+## 休息间隔是否合理
+
+v0.4.1 已检查默认间隔并修正调度：远眺参考二十分钟，不再因轻声模式和其他主题长期延后；普通提醒不会因为点击完成就绕过所选频率。新安装默认每六十分钟建议一次五分钟离屏休息。
+
+已有配置保留。如旧配置仍为较长休息一百二十分钟，可在「关怀」页自行改为六十分钟。具体间隔是软件偏好，可按自己的工作和实际需要调整。各项参考、依据、旧版问题和模拟条件见 [休息间隔评审](docs/REMINDER-INTERVALS.md)。
+
 ## 个性化设置
 
 | 页面 | 可调整内容 |
@@ -174,7 +180,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run.ps1 -Network
 ```
 
-检查产物和报告保存在 `build/checks`。当前包含 **32 项本地检查和 5 项联网检查**；公网服务发生超时或故障时，联网检查可能失败。
+检查产物和报告保存在 `build/checks`。当前包含 **39 项本地检查和 5 项联网检查**；公网服务发生超时或故障时，联网检查可能失败。
 
 ### 目录结构
 

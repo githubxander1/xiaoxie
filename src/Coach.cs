@@ -5,8 +5,9 @@ namespace RestBuddy {
   internal sealed class Coach : Form {
     private readonly System.Windows.Forms.Timer clock=new System.Windows.Forms.Timer();private DateTime finish;private Label countdown;private TextBox description;private Button done;private int seconds;
     protected override bool ShowWithoutActivation{get{return true;}}
+    internal static int DurationSeconds(string key){return key=="eyes"?20:key=="blink"?15:key=="walk"||key=="stretch"?60:key=="rest"?300:30;}
     internal Coach(string key,string name,Action finished){
-      seconds=key=="eyes"?20:key=="blink"?15:key=="walk"||key=="stretch"?60:key=="rest"?120:30;
+      seconds=DurationSeconds(key);
       Text="小歇陪你 · "+name;FormBorderStyle=FormBorderStyle.FixedToolWindow;TopMost=true;ShowInTaskbar=false;Font=Style.Font(9);BackColor=Style.Bg;StartPosition=FormStartPosition.CenterScreen;ClientSize=new Size(345,245);
       TableLayoutPanel root=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(18),ColumnCount=1,RowCount=4};root.RowStyles.Add(new RowStyle(SizeType.AutoSize));root.RowStyles.Add(new RowStyle(SizeType.AutoSize));root.RowStyles.Add(new RowStyle(SizeType.Percent,100));root.RowStyles.Add(new RowStyle(SizeType.AutoSize));Controls.Add(root);
       root.Controls.Add(Style.Label(name,12),0,0);countdown=Style.Label("",24);countdown.ForeColor=Style.Green;root.Controls.Add(countdown,0,1);

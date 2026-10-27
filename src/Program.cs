@@ -11,7 +11,7 @@ using Microsoft.Win32;
 
 [assembly:System.Runtime.CompilerServices.InternalsVisibleTo("RestBuddy.Checks")]
 [assembly:System.Reflection.AssemblyTitle("小歇")]
-[assembly:System.Reflection.AssemblyVersion("0.4.0.0")]
+[assembly:System.Reflection.AssemblyVersion("0.4.1.0")]
 namespace RestBuddy {
   public sealed class Rule {
     public string Key,Name,Message;public int Minutes;public bool Enabled;
@@ -25,12 +25,12 @@ namespace RestBuddy {
       new Rule("water","喝水","喝几口水，按需补充。",60,true),
       new Rule("walk","起身走动","起身走一走，暂时离开座位。",45,true),
       new Rule("stretch","小运动","轻轻活动肩膀和手腕，量力而行。",60,true),
-      new Rule("rest","较长休息","放下手头的事，休息几分钟吧。",120,true),
+      new Rule("rest","较长休息","放下手头的事，休息几分钟吧。",60,true),
       new Rule("toilet","如厕","如有需要，去趟洗手间。",120,false),
       new Rule("blink","自然眨眼","自然完整地眨几次眼睛。",15,true),
       new Rule("hands","双手放松","暂时放下鼠标，轻轻张开双手。",40,true),
       new Rule("feet","双脚与支撑","让双脚有支撑，换个舒服的位置。",50,true)};
-    public int Version=4;
+    public int Version=5;
     public bool AutoNews=true,NewsJitter=true,FinanceMix=true;public int NewsMinutes=10;
     public bool ShareEnabled=true,OnlineQuotes=true,NewsEnabled=true;
     public int ShareMinutes=90;
@@ -66,7 +66,7 @@ namespace RestBuddy {
       if(!new[]{"随机","诗词","文学","动漫","影视"}.Contains(value.QuoteKind))value.QuoteKind="随机";
       if(!ContentService.SafeUrl(value.NewsUrl))value.NewsUrl="https://www.ithome.com/rss/";
       if(value.Version<4){value.AutoNews=true;value.NewsMinutes=10;value.NewsJitter=true;if(value.NewsUrl==NewsFeeds.IT){value.NewsUrl=NewsFeeds.Jin10;value.FinanceMix=true;}else value.FinanceMix=false;}
-      value.NewsMinutes=Math.Max(2,Math.Min(180,value.NewsMinutes));value.Version=4;
+      value.NewsMinutes=Math.Max(2,Math.Min(180,value.NewsMinutes));value.Version=5;
       if(!ValidTime(value.Start))value.Start="09:00";if(!ValidTime(value.End))value.End="18:00";
       if(!ValidTime(value.LunchStart))value.LunchStart="12:00";if(!ValidTime(value.LunchEnd))value.LunchEnd="13:30";
       return value;
