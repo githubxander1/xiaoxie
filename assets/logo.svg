@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title id="title">小歇 Xiaoxie</title>
+  <desc id="desc">一只戴着绿叶的小猫，坐在浅绿色圆角背景上。</desc>
+  <rect x="4" y="4" width="184" height="184" rx="46" fill="#f0f5ed"/>
+  <ellipse cx="96" cy="164" rx="49" ry="7" fill="#dbe6d6"/>
+  <g stroke="#325c4d" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M135 152c31 0 38-47 20-43-11 3 1 20-15 20" fill="none" stroke="#71977a" stroke-width="14"/>
+    <ellipse cx="96" cy="136" rx="42" ry="28" fill="#71977a"/>
+    <path d="M46 65 43 25q2-5 36 23 17-6 35 0 34-28 36-23l-3 41c21 37-1 57-51 57S25 102 46 65Z" fill="#f6f4e2"/>
+    <path d="m51 39 5 29 15-13Zm91 0-6 29-14-13Z" fill="#e6bea7" stroke="none"/>
+    <path d="M71 80q6 7 12 0m27 0q6 7 12 0" fill="none"/>
+    <path d="M92 91h8m-4 1c0 13-13 12-13 7m13-7c0 13 13 12 13 7" fill="none"/>
+    <ellipse cx="60" cy="96" rx="10" ry="5" fill="#e5b5a5" stroke="none"/>
+    <ellipse cx="132" cy="96" rx="10" ry="5" fill="#e5b5a5" stroke="none"/>
+    <ellipse cx="76" cy="153" rx="16" ry="9" fill="#f6f4e2"/>
+    <ellipse cx="115" cy="153" rx="16" ry="9" fill="#f6f4e2"/>
+    <path d="M96 125c-2-16 17-17 19-17 0 16-9 21-19 17Z" fill="#cee1a9"/>
+    <path d="M96 125v9" fill="none"/>
+  </g>
+</svg>
