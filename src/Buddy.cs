@@ -14,6 +14,7 @@ namespace RestBuddy {
     internal readonly CareText Words;
     internal Companion Pet;
     private NotifyIcon tray;private Control dispatch;
+    private CareActionPicker actionPicker;
     private Settings settings;private Speech bubble;private Coach coach;private ContentService contents;
     private bool fetching;private int dialogVersion;private double shareActive;private AutoNewsClock autoNews;private readonly Random random=new Random();private DateTime autoContentAfter=DateTime.MinValue;
     private System.Windows.Forms.Timer tick;
@@ -22,7 +23,7 @@ namespace RestBuddy {
     private string previousReason="";
     internal Buddy(bool preview){
       dispatch=new Control();IntPtr handle=dispatch.Handle;
-      Options=Store.Load();Engine=new CareEngine(Options);Words=new CareText(Options);contents=new ContentService(Store.Folder);autoNews=new AutoNewsClock(Options,random,DateTime.UtcNow);
+      Options=Store.Load();Engine=new CareEngine(Options);Words=new CareText(Options);actionPicker=new CareActionPicker(random);contents=new ContentService(Store.Folder);autoNews=new AutoNewsClock(Options,random,DateTime.UtcNow);
       tray=new NotifyIcon{Text="小歇 · "+Options.PetName+"在这里",Icon=PetIcon(),Visible=true,ContextMenuStrip=MakeMenu()};
       tray.DoubleClick+=(s,e)=>OpenSettings();
       Pet=new Companion(this);Pet.ContextMenuStrip=MakeMenu();Pet.ApplyMode();
@@ -91,28 +92,31 @@ namespace RestBuddy {
     private void ShowCare(List<Rule> rules,bool preview){
       if(!preview)autoContentAfter=DateTime.UtcNow.AddMinutes(2);
       bool waterOnly=rules.Count==1&&rules[0].Key=="water";
+      CareAction exercise=waterOnly?null:actionPicker.Next(ExerciseKey(rules));
       string first=waterOnly?"water":"coach";
       SpeechAction[] actions={new SpeechAction(waterOnly?"喝过水了":"一起做一下",first),new SpeechAction("做到了","done"),new SpeechAction("现在忙","busy")};
-      ShowSpeech(Words.Message(rules),preview?"示范关怀":"陪你歇一下",actions,action=>{
+      ShowSpeech(CareMessage(rules,exercise),preview?"示范关怀":"陪你歇一下",actions,action=>{
         if(action=="ignored"){if(!preview)Engine.Ignored(DateTime.UtcNow);HideBubble();return;}
-        if(action=="coach"){StartCoach(ExerciseKey(rules));return;}
+        if(action=="coach"){StartCoach(exercise);return;}
         if(action=="done"){foreach(Rule r in rules)Engine.Completed(r.Key,DateTime.UtcNow);Feedback("completed");return;}
         Feedback(action);
       },36000);
       if(Options.Sound&&!preview)System.Media.SystemSounds.Asterisk.Play();
     }
+    private string CareMessage(List<Rule> rules,CareAction action){return String.Join("\n\n",rules.Select(r=>action!=null&&r.Key==action.Key&&(!Options.CustomMessages.ContainsKey(r.Key)||String.IsNullOrWhiteSpace(Options.CustomMessages[r.Key]))?action.Prompt:Words.Message(new List<Rule>{r})));}
     internal void Interact(){ShowSpeech(Words.Reply("hello",Engine.BusyCount),"我在呢",new[]{new SpeechAction("摸摸","pet"),new SpeechAction("新鲜事","fresh"),new SpeechAction("健康小练习","practice")},action=>{
-      if(action=="pet")Play("pet");else if(action=="fresh")FreshMenu();else if(action=="practice")StartCoach("eyes");else HideBubble();
+      if(action=="pet")Play("pet");else if(action=="fresh")FreshMenu();else if(action=="practice")StartRandomCoach();else HideBubble();
     },36000);}
     internal void Play(string kind){Pet.React(kind);ShowSpeech(Words.Play(kind),"陪我一下",new[]{new SpeechAction("再来一句","again"),new SpeechAction("一起活动","exercise"),new SpeechAction("收起","close")},action=>{if(action=="again")Play(kind);else if(action=="exercise")StartCoach("posture");else HideBubble();},36000);}
     private void FreshMenu(){ShowSpeech("想听一句台词，看看新闻，还是让我逗你笑一下？","来点新鲜的",new[]{new SpeechAction("一句话","quote"),new SpeechAction("新闻","news"),new SpeechAction("逗我一下","joke")},action=>{if(action=="quote")ShareContent(false,true);else if(action=="news")ShareContent(true,true);else if(action=="joke")Play("joke");else HideBubble();},36000);}
     internal void ShowWorkCheck(){ShowSpeech("开工前照顾一下自己的位置：屏幕有没有刺眼反光？背部和双脚有没有支撑？水杯放在顺手的位置了吗？","工位检查",new[]{new SpeechAction("检查好了","close"),new SpeechAction("今天先略过","close")},a=>HideBubble(),36000);}
     internal void ShowStatus(){ShowSpeech((Options.AutoNews&&Options.NewsEnabled?"下次自动快讯："+autoNews.DueUtc.ToLocalTime().ToString("HH:mm")+"（在可提醒时段展示）\n\n":"自动快讯已关闭\n\n")+Engine.Report()+"\n\n以上是本次会话的电脑使用参考，不代表检测到了身体状态。\n参考值到达后会综合选择关怀；新闻和语录会给健康关怀让路。","关怀状态",new[]{new SpeechAction("刚休息过","rested"),new SpeechAction("刚喝过水","water"),new SpeechAction("设置","settings")},action=>{if(action=="settings"){HideBubble();OpenSettings();}else if(action=="ignored")HideBubble();else Feedback(action);},60000);}
-    internal void StartCoach(string key){
-      HideBubble();if(coach!=null&&!coach.IsDisposed){coach.Show();return;}
-      Rule rule=Options.Rules.FirstOrDefault(r=>r.Key==key);if(rule==null)return;
+    internal void StartRandomCoach(){StartCoach(actionPicker.NextPractice(Options.Rules));}
+    internal void StartCoach(string key){StartCoach(actionPicker.Next(key));}
+    private void StartCoach(CareAction action){
+      HideBubble();if(coach!=null&&!coach.IsDisposed){coach.Show();return;}if(action==null)return;
       if(Engine.QuietUntil<DateTime.UtcNow.AddMinutes(1))Engine.Quiet(DateTime.UtcNow,1);
-      Pet.React("stretch");coach=new Coach(key,rule.Name,()=>{Engine.Completed(key,DateTime.UtcNow);Feedback("completed");});coach.Show();
+      Pet.React("stretch");coach=new Coach(action,()=>{Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");});coach.Show();
     }
     private async Task<ContentItem> FetchNews(bool recent){
       string url=Options.FinanceMix?(random.Next(2)==0?NewsFeeds.Jin10:NewsFeeds.Wallstreet):Options.NewsUrl;
@@ -137,7 +141,7 @@ namespace RestBuddy {
     }
     internal void Feedback(string action){DateTime now=DateTime.UtcNow;
       if(action=="busy")Engine.Busy(now);else if(action=="rested")Engine.Rest(now);else if(action=="water")Engine.Drank(now);else if(action=="going")Engine.Going(now);
-      Pet.React(action=="going"?"stretch":"pet");Pet.LastWords=Words.Reply(action,Engine.BusyCount);ShowSpeech(Pet.LastWords,"收到啦",new[]{new SpeechAction("好","close")},a=>HideBubble(),6500);
+      Pet.React(action=="going"?"stretch":"pet");Pet.LastWords=Words.Reply(action,Engine.BusyCount);HideBubble();
       tray.Text=Short(Options.PetName+" · "+State(),60);
     }
     private void ShowSpeech(string message,string caption,SpeechAction[] actions,Action<string> handler,int duration){
