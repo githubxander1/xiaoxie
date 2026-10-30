@@ -9,10 +9,10 @@ namespace RestBuddy {
     private string Pick(string key,string[] lines){int n=random.Next(lines.Length);int previous;if(lines.Length>1&&last.TryGetValue(key,out previous)&&n==previous)n=(n+1)%lines.Length;last[key]=n;return lines[n].Replace("{名字}",options.PetName);}
     internal string Message(List<Rule> rules){
       if(rules==null||rules.Count==0)return "找个合适的时机，照顾一下自己。";
+      rules=rules.Take(1).ToList();
       bool hasCustom=rules.Any(r=>options.CustomMessages.ContainsKey(r.Key)&&!String.IsNullOrWhiteSpace(options.CustomMessages[r.Key]));
-      if(hasCustom){if(rules.Count>1)return String.Join("\n",rules.Select(r=>Message(new List<Rule>{r})));string[] custom=options.CustomMessages[rules[0].Key].Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim()).Where(x=>x.Length>0).ToArray();if(custom.Length>0)return Pick("custom"+rules[0].Key,custom);}
+      if(hasCustom){string[] custom=options.CustomMessages[rules[0].Key].Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim()).Where(x=>x.Length>0).ToArray();if(custom.Length>0)return Pick("custom"+rules[0].Key,custom);}
       bool playful=options.Tone=="俏皮",brief=options.Tone=="简短";string key=rules[0].Key;string[] choices;
-      if(rules.Any(r=>r.Key=="rest")&&rules.Any(r=>r.Key=="water"))return Pick("combined"+options.Tone,brief?new[]{"离屏休息五分钟，顺便按需喝点水。","起来走走，歇五分钟，也照顾一下饮水需要。"}:playful?new[]{"水杯想见你，椅子想放假。起来接点水，留五分钟走走歇歇？","你去接水走走，离屏歇五分钟。我替你看着桌面。"}:new[]{"这段忙完了吗？起来走一走，给自己五分钟离屏休息，顺便按需喝点水。","陪自己歇五分钟吧。离开座位走走，也看看要不要补点水。"});
       switch(key){
         case "eyes":choices=brief?new[]{"看看远处二十秒，自然眨几次眼睛。","目光离开屏幕二十秒，也轻轻眨眨眼。"}:playful?new[]{"屏幕交给我看着，你看看远处二十秒，再自然眨几次眼睛？","眼睛的小假期到了。看看远方，轻轻眨眼，不用盯着我倒计时。","和小猫做个眨眼约定：先看看远处，再轻轻合上眼睑，自然睁开。"}:new[]{"让目光离开屏幕，看看远处大约二十秒，也自然完整地眨几次眼睛。","这段看完，给眼睛一点远方吧。看看远处二十秒，再轻轻眨眨眼。","抬眼看看远处，好吗？目光放远片刻，也记得自然眨眼。"};break;
         case "posture":choices=brief?new[]{"放松肩膀，换个舒服的坐姿。","双手离开键盘片刻，轻轻活动手指。","背部靠稳，双脚有支撑。"}:playful?new[]{"检查一下肩膀有没有悄悄耸起来？放松它，找个舒服的位置。","鼠标也想歇会。松开它，让手指轻轻张开再放松。","椅子下面也照顾一下：让双脚踏实落地，背部舒服地靠稳。","爪爪舒展时间。手腕放自然，轻轻活动手指和前臂就好。"}:new[]{"肩膀还放松吗？换个舒服的坐姿，背部靠稳，双脚有支撑。","双手暂时离开键盘和鼠标，轻轻张开手指，再放松。","留意一下手腕有没有一直折着，轻轻活动手指和前臂，做到舒服就好。","检查一下背部和双脚的支撑，也让肩膀松一松。","舒服的姿势也可以换一换。轻轻调整椅背或双脚的位置吧。"};break;
@@ -21,7 +21,6 @@ namespace RestBuddy {
         default:return "找个合适的时机，照顾一下自己。";
       }
       string message=Pick(key+options.Tone,choices);
-      if(rules.Count>1){string second=rules[1].Key;if(second=="posture")message+=" 顺便放松肩膀和双手，检查一下支撑。";else if(second=="eyes")message+=" 也看看远处，自然眨几次眼睛。";else if(second=="rest")message+=" 方便的话，也起身走走，离屏休息五分钟。";else if(second=="water")message+=" 有需要的话，顺便喝几口水。";}
       return message;
     }
     internal string Play(string kind){

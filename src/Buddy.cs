@@ -86,7 +86,7 @@ namespace RestBuddy {
       if(e.Reason==SessionSwitchReason.SessionLock){locked=true;lockAt=DateTime.UtcNow;HideBubble();if(coach!=null&&!coach.IsDisposed)coach.Close();}
       if(e.Reason==SessionSwitchReason.SessionUnlock){locked=false;if((DateTime.UtcNow-lockAt).TotalMinutes>=3)Engine.ScreenBreak(DateTime.UtcNow);else Engine.ResumeBuffer(DateTime.UtcNow);}
     }
-    internal void Preview(){ShowCare(new List<Rule>{Options.Rules.First(r=>r.Key=="rest"),Options.Rules.First(r=>r.Key=="water")},true);}
+    internal void Preview(){ShowCare(new List<Rule>{Options.Rules.First(r=>r.Key=="rest")},true);}
     internal void PreviewTopic(string key){ShowCare(new List<Rule>{Options.Rules.First(r=>r.Key==key)},true);}
     internal static string ExerciseKey(List<Rule> rules){Rule exercise=rules.FirstOrDefault(r=>r.Key=="rest")??rules.FirstOrDefault(r=>r.Key!="water");return exercise==null?"eyes":exercise.Key;}
     private void ShowCare(List<Rule> rules,bool preview){
@@ -118,7 +118,7 @@ namespace RestBuddy {
     private void StartCoach(CareAction action,bool automatic=false){
       HideBubble();if(coach!=null&&!coach.IsDisposed){coach.Show();return;}if(action==null)return;
       if(Engine.QuietUntil<DateTime.UtcNow.AddMinutes(1))Engine.Quiet(DateTime.UtcNow,1);
-      Pet.React("stretch");coach=new Coach(action,()=>{if(action.Key!="water")Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea);coach.Show();
+      Pet.React("stretch");coach=new Coach(action,()=>{if(action.Key!="water"){Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");}else{HideBubble();Pet.LastWords="饮水提示结束。";}},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea);coach.Show();
     }
     private async Task<ContentItem> FetchNews(bool recent){
       string url=Options.FinanceMix?(random.Next(2)==0?NewsFeeds.Jin10:NewsFeeds.Wallstreet):Options.NewsUrl;
