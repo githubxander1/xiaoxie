@@ -100,7 +100,7 @@ namespace RestBuddy {
         if(action=="coach"){StartCoach(exercise);return;}
         if(action=="done"){foreach(Rule r in rules)Engine.Completed(r.Key,DateTime.UtcNow);Feedback("completed");return;}
         Feedback(action);
-      },36000);
+      },36000,!preview);
       if(Options.Sound&&!preview)System.Media.SystemSounds.Asterisk.Play();
     }
     private string CareMessage(List<Rule> rules,CareAction action){return String.Join("\n\n",rules.Select(r=>action!=null&&r.Key==action.Key&&(!Options.CustomMessages.ContainsKey(r.Key)||String.IsNullOrWhiteSpace(Options.CustomMessages[r.Key]))?action.Prompt:Words.Message(new List<Rule>{r})));}
@@ -135,7 +135,7 @@ namespace RestBuddy {
         if(news){contents.MarkSeen(item);autoNews.Consumed(DateTime.UtcNow);}
         ShowSpeech(item.Display(),news?"新闻标题":"一句话",new[]{new SpeechAction("换一条","next"),new SpeechAction(ContentService.SafeUrl(item.Url)?"看来源":"收起","source"),new SpeechAction("先收起","close")},a=>{
           if(a=="next")ShareContent(news,true);else if(a=="source"&&ContentService.SafeUrl(item.Url)){try{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(item.Url){UseShellExecute=true});}catch{}}else HideBubble();
-        },60000);displayed=true;
+        },60000,!manual);displayed=true;
       }catch{if(manual&&!exiting&&ticket==dialogVersion)ShowSpeech("这次没取到新的标题。网络恢复或新闻更新后再试试，也可以换一个来源。","稍后再来",new[]{new SpeechAction("听一句话","quote"),new SpeechAction("收起","close")},a=>{if(a=="quote")ShareContent(false,true);else HideBubble();},36000);}
       finally{fetching=false;if(news&&!manual&&!displayed)autoNews.Retry(DateTime.UtcNow);}
     }
@@ -144,8 +144,8 @@ namespace RestBuddy {
       Pet.React(action=="going"?"stretch":"pet");Pet.LastWords=Words.Reply(action,Engine.BusyCount);HideBubble();
       tray.Text=Short(Options.PetName+" · "+State(),60);
     }
-    private void ShowSpeech(string message,string caption,SpeechAction[] actions,Action<string> handler,int duration){
-      HideBubble();bubble=new Speech(this,message,caption,actions,handler,duration);if(settings!=null&&!settings.IsDisposed&&settings.Visible)bubble.Owner=settings;bubble.Show();Pet.LastWords=message;
+    private void ShowSpeech(string message,string caption,SpeechAction[] actions,Action<string> handler,int duration,bool compact=false){
+      HideBubble();bubble=new Speech(this,message,caption,actions,handler,duration,compact);if(settings!=null&&!settings.IsDisposed&&settings.Visible)bubble.Owner=settings;bubble.Show();Pet.LastWords=message;
     }
     private void HideBubble(){dialogVersion++;if(bubble!=null&&!bubble.IsDisposed)bubble.Close();bubble=null;}
     internal void Pause(){Engine.Quiet(DateTime.UtcNow,60);HideBubble();Tick();}

@@ -11,7 +11,7 @@ using Microsoft.Win32;
 
 [assembly:System.Runtime.CompilerServices.InternalsVisibleTo("RestBuddy.Checks")]
 [assembly:System.Reflection.AssemblyTitle("小歇")]
-[assembly:System.Reflection.AssemblyVersion("0.5.1.0")]
+[assembly:System.Reflection.AssemblyVersion("0.5.2.0")]
 namespace RestBuddy {
   public sealed class Rule {
     public string Key,Name,Message;public int Minutes;public bool Enabled;

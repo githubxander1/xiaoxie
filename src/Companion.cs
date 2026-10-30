@@ -62,16 +62,29 @@ namespace RestBuddy {
   internal sealed class Speech : Form {
     private readonly Buddy buddy;private readonly System.Windows.Forms.Timer lifetime=new System.Windows.Forms.Timer();private bool closing;
     protected override bool ShowWithoutActivation{get{return true;}}
-    internal Speech(Buddy value,string message,string caption,SpeechAction[] actions,Action<string> handler,int duration){
+    internal Speech(Buddy value,string message,string caption,SpeechAction[] actions,Action<string> handler,int duration,bool compact=false){
       buddy=value;string petName=buddy==null?"小歇":buddy.Options.PetName;Text=petName+" · "+caption;FormBorderStyle=FormBorderStyle.None;ShowInTaskbar=false;TopMost=true;StartPosition=FormStartPosition.Manual;Font=Style.Font(9);BackColor=Style.Bg;AutoScaleMode=AutoScaleMode.Dpi;Padding=new Padding(16,12,16,12);
       float factor=1;using(Graphics measure=CreateGraphics())factor=measure.DpiX/96f;
-      int width=(int)(380*factor);int measured=TextRenderer.MeasureText(message,Font,new Size(width-(int)(68*factor),Int32.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.TextBoxControl|TextFormatFlags.NoPadding).Height;
+      int width=(int)(320*factor);int measured=TextRenderer.MeasureText(message,Font,new Size(width-(int)(68*factor),Int32.MaxValue),TextFormatFlags.WordBreak|TextFormatFlags.TextBoxControl|TextFormatFlags.NoPadding).Height;
       Rectangle working=Screen.FromPoint(Cursor.Position).WorkingArea;
-      ClientSize=new Size(Math.Min(width,working.Width-24),Math.Min(Math.Max((int)(190*factor),measured+(int)(142*factor)),Math.Min((int)(510*factor),working.Height-30)));
+      ClientSize=new Size(Math.Min(width,working.Width-24),Math.Min(Math.Max((int)(180*factor),measured+(int)(142*factor)),Math.Min((int)(510*factor),working.Height-30)));
       TableLayoutPanel root=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3};root.RowStyles.Add(new RowStyle(SizeType.AutoSize));root.RowStyles.Add(new RowStyle(SizeType.Percent,100));root.RowStyles.Add(new RowStyle(SizeType.AutoSize));Controls.Add(root);
       TableLayoutPanel top=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=2};top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,26));Label name=Style.Label(petName,11);name.ForeColor=Style.Green;top.Controls.Add(name,0,0);Button dismiss=Style.Button("×",()=>handler("ignored"));dismiss.AutoSize=false;dismiss.Size=new Size(24,24);dismiss.Padding=Padding.Empty;dismiss.Margin=Padding.Empty;dismiss.FlatAppearance.BorderSize=0;top.Controls.Add(dismiss,1,0);root.Controls.Add(top,0,0);
       TextBox content=new TextBox{Text=message.Replace("\n","\r\n").Replace("\r\r\n","\r\n"),ForeColor=Style.Ink,BackColor=Style.Bg,Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,WordWrap=true,ScrollBars=ScrollBars.Vertical,BorderStyle=BorderStyle.None,Margin=new Padding(4,10,4,10),TabStop=false};content.AccessibleName="完整内容，可滚动阅读";root.Controls.Add(content,0,1);
       FlowLayoutPanel buttons=new FlowLayoutPanel{AutoSize=true,WrapContents=true,Dock=DockStyle.Fill};foreach(SpeechAction action in actions){string key=action.Key;Button b=Style.Button(action.Label,()=>handler(key));b.Font=Style.Font(9);b.Padding=new Padding(6,3,6,3);buttons.Controls.Add(b);}root.Controls.Add(buttons,0,2);
+      if(compact){
+        Size expandedSize=ClientSize;Padding expandedPadding=Padding;root.Visible=false;Padding=new Padding(8);Opacity=0.94;
+        ClientSize=new Size(Math.Min((int)(280*factor),working.Width-24),(int)(68*factor));
+        TableLayoutPanel peek=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=3,RowCount=1};peek.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));peek.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,30*factor));peek.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,24*factor));
+        Label summary=new Label{Text=message.Replace("\r","").Replace("\n"," "),Dock=DockStyle.Fill,AutoEllipsis=true,TextAlign=ContentAlignment.MiddleLeft,ForeColor=Style.Ink,Margin=new Padding(2,0,4,0),Cursor=Cursors.Hand};summary.AccessibleName="提醒摘要，点击展开完整内容";
+        Action expand=()=>{lifetime.Stop();peek.Visible=false;Padding=expandedPadding;ClientSize=expandedSize;Opacity=1;root.Visible=true;root.BringToFront();Place();Round();lifetime.Interval=60000;lifetime.Start();};
+        summary.Click+=(s,e)=>expand();Button more=Style.Button("›",expand);more.Dock=DockStyle.Fill;more.AutoSize=false;more.Padding=Padding.Empty;more.Margin=Padding.Empty;more.FlatAppearance.BorderSize=0;more.AccessibleName="展开提醒";
+        Button close=Style.Button("×",()=>handler("ignored"));close.Dock=DockStyle.Fill;close.AutoSize=false;close.Padding=Padding.Empty;close.Margin=Padding.Empty;close.FlatAppearance.BorderSize=0;close.AccessibleName="关闭提醒";
+        peek.Controls.Add(summary,0,0);peek.Controls.Add(more,1,0);peek.Controls.Add(close,2,0);Controls.Add(peek);peek.BringToFront();
+        peek.MouseEnter+=(s,e)=>{if(!closing)lifetime.Stop();};peek.MouseLeave+=(s,e)=>{if(!closing&&!IsDisposed)lifetime.Start();};
+        foreach(Control child in peek.Controls){child.MouseEnter+=(s,e)=>{if(!closing)lifetime.Stop();};child.MouseLeave+=(s,e)=>{if(!closing&&!IsDisposed)lifetime.Start();};}
+        duration=8000;
+      }
       content.MouseEnter+=(s,e)=>{if(!closing)lifetime.Stop();};content.MouseLeave+=(s,e)=>{if(!IsDisposed&&!closing)lifetime.Start();};
       buttons.MouseEnter+=(s,e)=>{if(!closing)lifetime.Stop();};buttons.MouseLeave+=(s,e)=>{if(!IsDisposed&&!closing)lifetime.Start();};
       lifetime.Interval=duration;lifetime.Tick+=(s,e)=>{lifetime.Stop();handler("ignored");};Shown+=(s,e)=>{Place();lifetime.Start();};FormClosed+=(s,e)=>lifetime.Dispose();Resize+=(s,e)=>Round();Round();

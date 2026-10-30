@@ -10,7 +10,7 @@
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4)
 ![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.8-512BD4)
-![Version](https://img.shields.io/badge/version-0.5.1-527A59)
+![Version](https://img.shields.io/badge/version-0.5.2-527A59)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 [快速开始](#快速开始) · [功能](#功能) · [自动快讯](#自动快讯) · [源码构建](#源码构建) · [数据与隐私](#数据与隐私)
@@ -122,6 +122,8 @@
 财经来源为**第三方 RSS 中转**，并非金十官方实时 API，可能有缓存、延迟或临时不可用。内容保留来源与链接，点击后由浏览器打开。接入说明与参考项目见 [SOURCES.md](SOURCES.md)。
 
 ## 休息间隔是否合理
+
+v0.5.2 自动健康提醒、新闻和语录默认以约 280×68 的小条显示，8 秒自动收起；悬停暂停收起，点击文字或箭头展开完整内容及操作。完整提示框宽度缩至约 320，长内容可滚动阅读。以上尺寸随系统缩放调整。
 
 v0.5.1 在到期项目中随机选择主提醒，有其他到期项目时避免连续重复；远眺到期仍会合并提醒。互动里的健康小练习也会随机轮换。反馈直接生效，不再追加确认弹窗；练习计时结束自动收起并更新对应计时，提前收起不算完成。
 
