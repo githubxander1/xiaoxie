@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
 namespace RestBuddy {
@@ -9,6 +9,7 @@ namespace RestBuddy {
   internal sealed class CareActionPicker {
     private readonly Random random;private readonly Dictionary<string,string> previous=new Dictionary<string,string>();private string lastPractice="";
     private static readonly CareAction[] Actions={
+      new CareAction("sip","water","喝几口水","按自己的需要，喝几口水。","按自己的需要喝水，不必为了倒计时勉强喝。",10),
       new CareAction("look","eyes","看看远处","把目光借给远处二十秒吧，也自然眨几次眼睛。","把目光移向远处约六米的位置，放松二十秒。自然眨眼，不用盯着倒计时。",20),
       new CareAction("window","eyes","眼睛小休息","先把视线移开屏幕，看看窗外或远处，轻轻眨眨眼。","视线离开屏幕，选择远处舒服的位置看看，保持自然眨眼。",20),
       new CareAction("shoulders","posture","放松肩膀","放松一下肩膀，换个舒服的坐姿。","留意肩膀有没有耸起，自然放松。轻轻换个坐姿，做到舒服就好。",30),

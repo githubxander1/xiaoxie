@@ -47,17 +47,13 @@ namespace RestBuddy {
       if(now<QuietUntil||now<feedbackBuffer)return null;
       Rule eyes=options.Rules.FirstOrDefault(r=>r.Key=="eyes"&&r.Enabled&&effort[r.Key]>=threshold[r.Key]&&now>=offered[r.Key]);
       bool eyeOverdue=eyes!=null&&(offered["eyes"]==DateTime.MinValue?effort["eyes"]>=threshold["eyes"]+120:now>=offered["eyes"].AddMinutes(2));
-      bool ordinaryReady=now>=CooldownUntil&&now>=lastPrompt.AddMinutes(Spacing);
+      bool ordinaryReady=now>=CooldownUntil&&now>=lastPrompt.AddMinutes(lastPrimary=="eyes"?Math.Min(10,Spacing):Spacing);
       if(!ordinaryReady&&!(eyeOverdue&&now>=lastPrompt.AddMinutes(2)))return null;
       Rule primary=PickPrimary(options.Rules.Where(r=>r.Enabled&&effort[r.Key]>=threshold[r.Key]&&now>=offered[r.Key]).ToList(),now);
-      if(primary==null)return null;List<Rule> result=new List<Rule>{primary};string second=null;
-      if(primary.Key=="rest")second=Eligible("water",0.8,now)?"water":null;
-      if(primary.Key=="water")second=Eligible("rest",0.85,now)?"rest":null;
-      if(primary.Key=="eyes"){Rule companion=options.Rules.Where(r=>r.Key!="eyes"&&Eligible(r.Key,0.85,now)).OrderByDescending(r=>Rank(r,now)).FirstOrDefault();second=companion==null?null:companion.Key;}
-      if(eyes!=null&&primary.Key!="eyes")second="eyes";
-      if(second!=null)result.Add(options.Rules.First(r=>r.Key==second));
+      if(eyes!=null)primary=eyes;
+      if(primary==null)return null;List<Rule> result=new List<Rule>{primary};
       foreach(Rule r in result){shown[r.Key]++;lastOffered[r.Key]=now;offered[r.Key]=now.AddMinutes(r.Key=="eyes"?r.Minutes:Math.Max(5,Math.Min(25,r.Minutes*0.65)));}
-      lastPrimary=primary.Key;lastPrompt=now;CooldownUntil=now.AddMinutes(Spacing);return result;
+      lastPrimary=primary.Key;lastPrompt=now;CooldownUntil=now.AddMinutes(primary.Key=="eyes"?Math.Min(10,Spacing):Spacing);return result;
     }
     private bool Eligible(string key,double ratio,DateTime now){return options.Rules.Any(r=>r.Key==key&&r.Enabled)&&effort[key]>=threshold[key]*ratio&&now>=offered[key];}
     internal string Report(){return String.Join("\n",options.Rules.Where(r=>r.Enabled).Select(r=>r.Name+"：本轮电脑使用约 "+Math.Floor(MinutesFor(r.Key))+" 分钟"));}

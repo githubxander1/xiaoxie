@@ -91,6 +91,8 @@ namespace RestBuddy {
     internal static string ExerciseKey(List<Rule> rules){Rule exercise=rules.FirstOrDefault(r=>r.Key=="rest")??rules.FirstOrDefault(r=>r.Key!="water");return exercise==null?"eyes":exercise.Key;}
     private void ShowCare(List<Rule> rules,bool preview){
       if(!preview)autoContentAfter=DateTime.UtcNow.AddMinutes(2);
+      rules=rules.Take(1).ToList();
+      if(!preview){StartCoach(actionPicker.Next(rules[0].Key),true);return;}
       bool waterOnly=rules.Count==1&&rules[0].Key=="water";
       CareAction exercise=waterOnly?null:actionPicker.Next(ExerciseKey(rules));
       string first=waterOnly?"water":"coach";
@@ -113,10 +115,10 @@ namespace RestBuddy {
     internal void ShowStatus(){ShowSpeech((Options.AutoNews&&Options.NewsEnabled?"下次自动快讯："+autoNews.DueUtc.ToLocalTime().ToString("HH:mm")+"（在可提醒时段展示）\n\n":"自动快讯已关闭\n\n")+Engine.Report()+"\n\n以上是本次会话的电脑使用参考，不代表检测到了身体状态。\n参考值到达后会综合选择关怀；新闻和语录会给健康关怀让路。","关怀状态",new[]{new SpeechAction("刚休息过","rested"),new SpeechAction("刚喝过水","water"),new SpeechAction("设置","settings")},action=>{if(action=="settings"){HideBubble();OpenSettings();}else if(action=="ignored")HideBubble();else Feedback(action);},60000);}
     internal void StartRandomCoach(){StartCoach(actionPicker.NextPractice(Options.Rules));}
     internal void StartCoach(string key){StartCoach(actionPicker.Next(key));}
-    private void StartCoach(CareAction action){
+    private void StartCoach(CareAction action,bool automatic=false){
       HideBubble();if(coach!=null&&!coach.IsDisposed){coach.Show();return;}if(action==null)return;
       if(Engine.QuietUntil<DateTime.UtcNow.AddMinutes(1))Engine.Quiet(DateTime.UtcNow,1);
-      Pet.React("stretch");coach=new Coach(action,()=>{Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");});coach.Show();
+      Pet.React("stretch");coach=new Coach(action,()=>{if(action.Key!="water")Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea);coach.Show();
     }
     private async Task<ContentItem> FetchNews(bool recent){
       string url=Options.FinanceMix?(random.Next(2)==0?NewsFeeds.Jin10:NewsFeeds.Wallstreet):Options.NewsUrl;
