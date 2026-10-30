@@ -16,7 +16,7 @@ namespace RestBuddy {
     private NotifyIcon tray;private Control dispatch;
     private CareActionPicker actionPicker;
     private Settings settings;private Speech bubble;private Coach coach;private ContentService contents;
-    private bool fetching;private int dialogVersion;private double shareActive;private AutoNewsClock autoNews;private readonly Random random=new Random();private DateTime autoContentAfter=DateTime.MinValue;
+    private int newsCategory;private bool fetching;private int dialogVersion;private double shareActive;private AutoNewsClock autoNews;private readonly Random random=new Random();private DateTime autoContentAfter=DateTime.MinValue;
     private System.Windows.Forms.Timer tick;
     private DateTime lastTick=DateTime.UtcNow,lockAt,lastDay=DateTime.Today;
     private bool locked,exiting,wasActive;
@@ -121,6 +121,13 @@ namespace RestBuddy {
       Pet.React("stretch");coach=new Coach(action,()=>{if(action.Key!="water"){Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");}else{HideBubble();Pet.LastWords="饮水提示结束。";}},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea);coach.Show();
     }
     private async Task<ContentItem> FetchNews(bool recent){
+      if(Options.DiverseNews){
+        for(int attempt=0;attempt<NewsFeeds.Diverse.Length;attempt++){
+          int category=newsCategory++%NewsFeeds.Diverse.Length;
+          try{ContentItem selected=await contents.NewsAsync(NewsFeeds.Diverse[category],recent,category==2?72:24);return selected;}catch{}
+        }
+        throw new InvalidOperationException("暂时没有新的新闻。");
+      }
       string url=Options.FinanceMix?(random.Next(2)==0?NewsFeeds.Jin10:NewsFeeds.Wallstreet):Options.NewsUrl;
       try{return await contents.NewsAsync(url,recent);}catch{if(!Options.FinanceMix)throw;}
       return await contents.NewsAsync(url==NewsFeeds.Jin10?NewsFeeds.Wallstreet:NewsFeeds.Jin10,recent);

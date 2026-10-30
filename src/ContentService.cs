@@ -36,8 +36,8 @@ namespace RestBuddy {
       string[] choices=local.Where(x=>x!=lastQuote).ToArray();lastQuote=choices[random.Next(choices.Length)];return new ContentItem{Kind="quote",Text=lastQuote,Source="小歇原创短句",FetchedUtc=DateTime.UtcNow,QuoteKind=kind};
     }});}
     internal static string Identity(string text){using(var sha=System.Security.Cryptography.SHA256.Create())return "id:"+BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text??""))).Replace("-","");}
-    internal static List<ContentItem> Candidates(IEnumerable<ContentItem> items,IEnumerable<string> seen,bool recent,DateTime now){HashSet<string> used=new HashSet<string>(seen);return items.Where(x=>!used.Contains(x.Id??x.Url)&&!(x.SourceLinkOnly==false&&used.Contains(x.Url))&&(!recent||(!x.PublishedUtc.HasValue?(now-x.FetchedUtc).TotalMinutes<20:(now-x.PublishedUtc.Value).TotalHours<8))).OrderByDescending(x=>x.PublishedUtc??x.FetchedUtc).ToList();}
-    internal Task<ContentItem> NewsAsync(string url,bool randomRecent=false){return Task.Run(()=>{lock(gate){
+    internal static List<ContentItem> Candidates(IEnumerable<ContentItem> items,IEnumerable<string> seen,bool recent,DateTime now,int maxAgeHours=8){HashSet<string> used=new HashSet<string>(seen);return items.Where(x=>!used.Contains(x.Id??x.Url)&&!(x.SourceLinkOnly==false&&used.Contains(x.Url))&&(!recent||(!x.PublishedUtc.HasValue?(now-x.FetchedUtc).TotalMinutes<20:(now-x.PublishedUtc.Value).TotalHours<maxAgeHours))).OrderByDescending(x=>x.PublishedUtc??x.FetchedUtc).ToList();}
+    internal Task<ContentItem> NewsAsync(string url,bool randomRecent=false,int maxAgeHours=8){return Task.Run(()=>{lock(gate){
       if(!SafeUrl(url))throw new InvalidOperationException("请填写有效的 RSS 或热榜地址。");
       NewsBatch batch=cache.Batches.FirstOrDefault(x=>x.Url==url);bool failed=false;
       if(batch==null||(DateTime.UtcNow-batch.FetchedUtc).TotalMinutes>=3)try{
@@ -45,7 +45,7 @@ namespace RestBuddy {
         batch=new NewsBatch{Url=url,FetchedUtc=DateTime.UtcNow,Items=news.Take(60).ToList()};cache.Batches.RemoveAll(x=>x.Url==url);cache.Batches.Insert(0,batch);cache.Batches=cache.Batches.Take(5).ToList();Save();
       }catch{failed=true;}
       if(batch==null||batch.Items.Count==0)throw new InvalidOperationException("这次没取到快讯，过会儿再试，或换一个来源。");
-      List<ContentItem> pool=Candidates(batch.Items,cache.Seen,randomRecent,DateTime.UtcNow);if(pool.Count==0)throw new InvalidOperationException("暂时没有新的近期快讯。");
+      List<ContentItem> pool=Candidates(batch.Items,cache.Seen,randomRecent,DateTime.UtcNow,maxAgeHours);if(pool.Count==0)throw new InvalidOperationException("暂时没有新的近期快讯。");
       ContentItem item=randomRecent?pool[random.Next(Math.Min(15,pool.Count))]:pool[0];item.Cached=failed;return item;
     }});}
     internal void MarkSeen(ContentItem item){lock(gate){cache.Seen.Insert(0,item.Id??item.Url);cache.Seen=cache.Seen.Distinct().Take(200).ToList();Save();}}

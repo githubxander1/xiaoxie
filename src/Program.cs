@@ -11,7 +11,7 @@ using Microsoft.Win32;
 
 [assembly:System.Runtime.CompilerServices.InternalsVisibleTo("RestBuddy.Checks")]
 [assembly:System.Reflection.AssemblyTitle("小歇")]
-[assembly:System.Reflection.AssemblyVersion("0.5.3.0")]
+[assembly:System.Reflection.AssemblyVersion("0.5.4.0")]
 namespace RestBuddy {
   public sealed class Rule {
     public string Key,Name,Message;public int Minutes;public bool Enabled;
@@ -24,7 +24,8 @@ namespace RestBuddy {
       new Rule("posture","姿势放松","放松肩膀和双手，检查背部与双脚支撑。",30,true),
       new Rule("rest","离座休息","起身走走，给自己五分钟离屏休息。",60,true),
       new Rule("water","饮水","按自己的需要，喝几口水。",60,true)};
-    public int Version=6;
+    public int Version=7;
+    public bool DiverseNews=true;
     public bool WorkStartCheck=false;public string WorkCheckDate="";
     public bool AutoNews=true,NewsJitter=true,FinanceMix=true;public int NewsMinutes=10;
     public bool ShareEnabled=true,OnlineQuotes=true,NewsEnabled=true;
@@ -58,7 +59,8 @@ namespace RestBuddy {
       if(!new[]{"随机","诗词","文学","动漫","影视"}.Contains(value.QuoteKind))value.QuoteKind="随机";
       if(!ContentService.SafeUrl(value.NewsUrl))value.NewsUrl="https://www.ithome.com/rss/";
       if(value.Version<4){value.AutoNews=true;value.NewsMinutes=10;value.NewsJitter=true;if(value.NewsUrl==NewsFeeds.IT){value.NewsUrl=NewsFeeds.Jin10;value.FinanceMix=true;}else value.FinanceMix=false;}
-      value.NewsMinutes=Math.Max(2,Math.Min(180,value.NewsMinutes));value.Version=6;
+      if(value.Version<7)value.DiverseNews=value.FinanceMix;
+      value.NewsMinutes=Math.Max(2,Math.Min(180,value.NewsMinutes));value.Version=7;
       if(!ValidTime(value.Start))value.Start="09:00";if(!ValidTime(value.End))value.End="18:00";
       if(!ValidTime(value.LunchStart))value.LunchStart="12:00";if(!ValidTime(value.LunchEnd))value.LunchEnd="13:30";
       return value;
