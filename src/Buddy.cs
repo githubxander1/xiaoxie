@@ -15,6 +15,7 @@ namespace RestBuddy {
     internal Companion Pet;
     private NotifyIcon tray;private Control dispatch;
     private CareActionPicker actionPicker;
+    private ReminderHistory history;private HistoryWindow historyWindow;
     private Settings settings;private Speech bubble;private Coach coach;private ContentService contents;
     private int newsCategory;private bool fetching;private int dialogVersion;private double shareActive;private AutoNewsClock autoNews;private readonly Random random=new Random();private DateTime autoContentAfter=DateTime.MinValue;
     private System.Windows.Forms.Timer tick;
@@ -23,7 +24,7 @@ namespace RestBuddy {
     private string previousReason="";
     internal Buddy(bool preview){
       dispatch=new Control();IntPtr handle=dispatch.Handle;
-      Options=Store.Load();Engine=new CareEngine(Options);Words=new CareText(Options);actionPicker=new CareActionPicker(random);contents=new ContentService(Store.Folder);autoNews=new AutoNewsClock(Options,random,DateTime.UtcNow);
+      Options=Store.Load();history=new ReminderHistory(Store.Folder);Engine=new CareEngine(Options);Words=new CareText(Options);actionPicker=new CareActionPicker(random);contents=new ContentService(Store.Folder);autoNews=new AutoNewsClock(Options,random,DateTime.UtcNow);
       tray=new NotifyIcon{Text="小歇 · "+Options.PetName+"在这里",Icon=PetIcon(),Visible=true,ContextMenuStrip=MakeMenu()};
       tray.DoubleClick+=(s,e)=>OpenSettings();
       Pet=new Companion(this);Pet.ContextMenuStrip=MakeMenu();Pet.ApplyMode();
@@ -40,6 +41,7 @@ namespace RestBuddy {
       foreach(string[] entry in new[]{new[]{"展开小猫","expanded"},new[]{"收成小点","compact"},new[]{"隐藏到托盘","hidden"}}){string mode=entry[1];ToolStripMenuItem item=new ToolStripMenuItem(entry[0]);item.Click+=(s,e)=>SetMode(mode);menu.Items.Add(item);menu.Opening+=(s,e)=>item.Checked=Options.Mode==mode;}
       menu.Items.Add(new ToolStripSeparator());menu.Items.Add("和我说句话",null,(s,e)=>Interact());menu.Items.Add("示范关怀",null,(s,e)=>Preview());
       ToolStripMenuItem play=new ToolStripMenuItem("陪我一下");play.DropDownItems.Add("摸摸小猫",null,(s,e)=>Play("pet"));play.DropDownItems.Add("一起伸懒腰",null,(s,e)=>Play("stretch"));play.DropDownItems.Add("逗我一下",null,(s,e)=>Play("joke"));play.DropDownItems.Add("给我打打气",null,(s,e)=>Play("cheer"));menu.Items.Add(play);
+      menu.Items.Add("提醒记录",null,(s,e)=>OpenHistory());
       menu.Items.Add("随机一句 / 台词",null,(s,e)=>ShareContent(false,true));menu.Items.Add("读条新闻",null,(s,e)=>ShareContent(true,true));
       ToolStripMenuItem exercise=new ToolStripMenuItem("健康小练习");foreach(Rule r in Options.Rules.Where(x=>x.Key!="water")){string key=r.Key;exercise.DropDownItems.Add(r.Name,null,(s,e)=>StartCoach(key));}menu.Items.Add(exercise);menu.Items.Add("关怀状态",null,(s,e)=>ShowStatus());menu.Items.Add("工位检查",null,(s,e)=>ShowWorkCheck());
       menu.Items.Add("我刚休息过",null,(s,e)=>Feedback("rested"));menu.Items.Add("我刚喝过水",null,(s,e)=>Feedback("water"));menu.Items.Add("安静一小时",null,(s,e)=>Pause());menu.Items.Add("继续关怀",null,(s,e)=>Resume());
@@ -74,7 +76,7 @@ namespace RestBuddy {
       tray.Text=Short(Options.PetName+" · "+state,60);
       if(settings!=null&&!settings.IsDisposed)settings.State.Text=state;
       Pet.SetMood(!active||now<Engine.QuietUntil);
-      if(!active||now<Engine.QuietUntil||(bubble!=null&&!bubble.IsDisposed)||(coach!=null&&!coach.IsDisposed)||(settings!=null&&!settings.IsDisposed&&settings.Visible))return;
+      if(!active||(historyWindow!=null&&!historyWindow.IsDisposed&&historyWindow.Visible)||now<Engine.QuietUntil||(bubble!=null&&!bubble.IsDisposed)||(coach!=null&&!coach.IsDisposed)||(settings!=null&&!settings.IsDisposed&&settings.Visible))return;
       if(Options.WorkStartCheck&&Options.WorkCheckDate!=DateTime.Today.ToString("yyyy-MM-dd")){Options.WorkCheckDate=DateTime.Today.ToString("yyyy-MM-dd");Persist();ShowWorkCheck();return;}
       List<Rule> rules=Engine.Suggest(now);if(rules!=null){ShowCare(rules,false);return;}
       if(now>=autoContentAfter&&autoNews.IsDue(now)&&!fetching){ShareContent(true,false);return;}
@@ -119,7 +121,7 @@ namespace RestBuddy {
       HideBubble();if(coach!=null&&!coach.IsDisposed){coach.Show();return;}if(action==null)return;
       if(Engine.QuietUntil<DateTime.UtcNow.AddMinutes(1))Engine.Quiet(DateTime.UtcNow,1);
       string customText;string customLine=Options.CustomMessages.TryGetValue(action.Key,out customText)&&!String.IsNullOrWhiteSpace(customText)?Words.Message(new List<Rule>{Options.Rules.First(r=>r.Key==action.Key)}):null;
-      Pet.React("stretch");coach=new Coach(action,()=>{if(action.Key!="water"){Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");}else{HideBubble();Pet.LastWords="饮水提示结束。";}},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea,customLine);coach.Show();
+      Pet.React("stretch");coach=new Coach(action,()=>{if(action.Key!="water"){Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");}else{HideBubble();Pet.LastWords="饮水提示结束。";}},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea,customLine);coach.Show();history.Add("健康",action.Title+"（"+action.Seconds+" 秒）\n"+(customLine??action.Instructions),automatic?"自动提醒":"手动练习",null,null,false);
     }
     private async Task<ContentItem> FetchNews(bool recent){
       if(Options.DiverseNews){
@@ -141,11 +143,11 @@ namespace RestBuddy {
       int ticket=dialogVersion;
       try{
         ContentItem item=await (news?FetchNews(!manual):contents.QuoteAsync(Options.QuoteKind,Options.OnlineQuotes));
-        if(exiting||ticket!=dialogVersion||(!manual&&(State()!="在这里陪你"||(settings!=null&&!settings.IsDisposed&&settings.Visible))))return;
+        if(exiting||ticket!=dialogVersion||(!manual&&(State()!="在这里陪你"||(historyWindow!=null&&!historyWindow.IsDisposed&&historyWindow.Visible)||(settings!=null&&!settings.IsDisposed&&settings.Visible))))return;
         if(news){contents.MarkSeen(item);autoNews.Consumed(DateTime.UtcNow);}
         ShowSpeech(item.Display(),news?"新闻标题":"一句话",new[]{new SpeechAction("换一条","next"),new SpeechAction(ContentService.SafeUrl(item.Url)?"看来源":"收起","source"),new SpeechAction("先收起","close")},a=>{
           if(a=="next")ShareContent(news,true);else if(a=="source"&&ContentService.SafeUrl(item.Url)){try{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(item.Url){UseShellExecute=true});}catch{}}else HideBubble();
-        },60000,!manual);displayed=true;
+        },60000,!manual);history.Add(news?"新闻":"语录",item.Text,item.Source,item.Url,item.PublishedUtc,item.SourceLinkOnly);displayed=true;
       }catch{if(manual&&!exiting&&ticket==dialogVersion)ShowSpeech("这次没取到新的标题。网络恢复或新闻更新后再试试，也可以换一个来源。","稍后再来",new[]{new SpeechAction("听一句话","quote"),new SpeechAction("收起","close")},a=>{if(a=="quote")ShareContent(false,true);else HideBubble();},36000);}
       finally{fetching=false;if(news&&!manual&&!displayed)autoNews.Retry(DateTime.UtcNow);}
     }
@@ -160,7 +162,8 @@ namespace RestBuddy {
     private void HideBubble(){dialogVersion++;if(bubble!=null&&!bubble.IsDisposed)bubble.Close();bubble=null;}
     internal void Pause(){Engine.Quiet(DateTime.UtcNow,60);HideBubble();Tick();}
     internal void Resume(){Engine.Resume(DateTime.UtcNow);Tick();}
+    internal void OpenHistory(){HideBubble();if(historyWindow==null||historyWindow.IsDisposed)historyWindow=new HistoryWindow(history);historyWindow.Show();historyWindow.WindowState=FormWindowState.Normal;historyWindow.Activate();}
     internal void OpenSettings(){autoContentAfter=DateTime.UtcNow.AddSeconds(30);if(settings==null||settings.IsDisposed)settings=new Settings(this);settings.Show();settings.WindowState=FormWindowState.Normal;settings.Activate();}
-    protected override void ExitThreadCore(){if(exiting)return;exiting=true;tick.Stop();SystemEvents.SessionSwitch-=SessionSwitch;HideBubble();if(coach!=null&&!coach.IsDisposed)coach.Close();if(settings!=null)settings.Close();Pet.AllowClose=true;Pet.Close();Persist();Icon icon=tray.Icon;tray.Visible=false;tray.Dispose();icon.Dispose();dispatch.Dispose();base.ExitThreadCore();}
+    protected override void ExitThreadCore(){if(exiting)return;exiting=true;tick.Stop();SystemEvents.SessionSwitch-=SessionSwitch;HideBubble();if(coach!=null&&!coach.IsDisposed)coach.Close();if(settings!=null)settings.Close();if(historyWindow!=null)historyWindow.Close();Pet.AllowClose=true;Pet.Close();Persist();Icon icon=tray.Icon;tray.Visible=false;tray.Dispose();icon.Dispose();dispatch.Dispose();base.ExitThreadCore();}
   }
 }
