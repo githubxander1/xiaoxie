@@ -47,7 +47,7 @@ namespace RestBuddy {
     }
     internal void SetMode(string value){Options.Mode=value;HideBubble();Pet.ApplyMode();Persist();}
     internal void Persist(){try{Store.Save(Options);}catch{if(settings!=null&&!settings.IsDisposed)settings.State.Text="设置尚未保存，请检查目录权限";}}
-    internal bool Save(){try{Store.Save(Options);Engine.Reconfigure();autoNews.Reconfigure(DateTime.UtcNow);HideBubble();Pet.ApplyMode();return true;}catch{MessageBox.Show("设置尚未保存，请检查目录权限。","小歇");return false;}}
+    internal bool Save(){try{Store.Save(Options);Engine.Reconfigure();autoNews.Reconfigure(DateTime.UtcNow);if(coach!=null&&!coach.IsDisposed)coach.Close();HideBubble();Pet.ApplyMode();return true;}catch{MessageBox.Show("设置尚未保存，请检查目录权限。","小歇");return false;}}
     private static bool Inside(TimeSpan now,string start,string end){TimeSpan a=TimeSpan.Parse(start),b=TimeSpan.Parse(end);return a<b?now>=a&&now<b:now>=a||now<b;}
     internal string State(){return State(false);}
     private string State(bool ignoreQuiet){
@@ -118,7 +118,8 @@ namespace RestBuddy {
     private void StartCoach(CareAction action,bool automatic=false){
       HideBubble();if(coach!=null&&!coach.IsDisposed){coach.Show();return;}if(action==null)return;
       if(Engine.QuietUntil<DateTime.UtcNow.AddMinutes(1))Engine.Quiet(DateTime.UtcNow,1);
-      Pet.React("stretch");coach=new Coach(action,()=>{if(action.Key!="water"){Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");}else{HideBubble();Pet.LastWords="饮水提示结束。";}},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea);coach.Show();
+      string customText;string customLine=Options.CustomMessages.TryGetValue(action.Key,out customText)&&!String.IsNullOrWhiteSpace(customText)?Words.Message(new List<Rule>{Options.Rules.First(r=>r.Key==action.Key)}):null;
+      Pet.React("stretch");coach=new Coach(action,()=>{if(action.Key!="water"){Engine.Completed(action.Key,DateTime.UtcNow);Feedback("completed");}else{HideBubble();Pet.LastWords="饮水提示结束。";}},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea,customLine);coach.Show();
     }
     private async Task<ContentItem> FetchNews(bool recent){
       if(Options.DiverseNews){

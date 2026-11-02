@@ -11,16 +11,17 @@ namespace RestBuddy {
     internal DateTime QuietUntil=DateTime.MinValue;
     internal DateTime CooldownUntil {get;private set;}
     private DateTime lastPrompt=DateTime.MinValue,feedbackBuffer=DateTime.MinValue;
-    private string lastPrimary="";
+    private string lastPrimary="";private readonly Dictionary<string,string> configured=new Dictionary<string,string>();
+    private string Config(Rule r){return r.Minutes+":"+r.Enabled+":"+options.Frequency;}
     internal int BusyCount;
     internal CareEngine(Options value):this(value,new Random(),DateTime.UtcNow){}
     internal CareEngine(Options value,Random generator,DateTime now){options=value;random=generator;Reset(now);}
     private int Spacing {get{return options.Frequency=="轻声"?20:options.Frequency=="积极"?6:10;}}
     private double Factor {get{return options.Frequency=="轻声"?1.15:options.Frequency=="积极"?0.9:1;}}
     private double Threshold(Rule r){return r.Minutes*60*(r.Key=="eyes"?1:Factor*(0.9+random.NextDouble()*0.2));}
-    private void Renew(string key){Rule r=options.Rules.First(x=>x.Key==key);effort[key]=0;shown[key]=0;offered[key]=DateTime.MinValue;lastOffered[key]=DateTime.MinValue;threshold[key]=Threshold(r);}
+    private void Renew(string key){Rule r=options.Rules.First(x=>x.Key==key);effort[key]=0;shown[key]=0;offered[key]=DateTime.MinValue;lastOffered[key]=DateTime.MinValue;threshold[key]=Threshold(r);configured[key]=Config(r);}
     internal void Reset(DateTime now){foreach(Rule r in options.Rules)Renew(r.Key);CooldownUntil=now.AddMinutes(3);lastPrompt=DateTime.MinValue;feedbackBuffer=DateTime.MinValue;lastPrimary="";BusyCount=0;}
-    internal void Reconfigure(){foreach(Rule r in options.Rules){if(!effort.ContainsKey(r.Key))Renew(r.Key);else threshold[r.Key]=Threshold(r);}}
+    internal void Reconfigure(){foreach(Rule r in options.Rules){if(!effort.ContainsKey(r.Key))Renew(r.Key);else if(configured[r.Key]!=Config(r)){threshold[r.Key]=Threshold(r);offered[r.Key]=DateTime.MinValue;lastOffered[r.Key]=DateTime.MinValue;shown[r.Key]=0;configured[r.Key]=Config(r);}}}
     internal void AddActive(double seconds){if(seconds<=0||seconds>30)return;foreach(Rule r in options.Rules)if(r.Enabled)effort[r.Key]+=seconds;}
     internal double MinutesFor(string key){return effort.ContainsKey(key)?effort[key]/60:0;}
     internal bool HasDue {get{return options.Rules.Any(r=>r.Enabled&&effort[r.Key]>=threshold[r.Key]);}}

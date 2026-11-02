@@ -12,16 +12,18 @@ namespace RestBuddy {
       rules=rules.Take(1).ToList();
       bool hasCustom=rules.Any(r=>options.CustomMessages.ContainsKey(r.Key)&&!String.IsNullOrWhiteSpace(options.CustomMessages[r.Key]));
       if(hasCustom){string[] custom=options.CustomMessages[rules[0].Key].Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim()).Where(x=>x.Length>0).ToArray();if(custom.Length>0)return Pick("custom"+rules[0].Key,custom);}
-      bool playful=options.Tone=="俏皮",brief=options.Tone=="简短";string key=rules[0].Key;string[] choices;
+      return Pick(rules[0].Key+options.Tone,BuiltInLines(rules[0].Key));
+    }
+    internal string[] BuiltInLines(string key){
+      bool playful=options.Tone=="俏皮",brief=options.Tone=="简短";string[] choices;
       switch(key){
         case "eyes":choices=brief?new[]{"看看远处二十秒，自然眨几次眼睛。","目光离开屏幕二十秒，也轻轻眨眨眼。"}:playful?new[]{"屏幕交给我看着，你看看远处二十秒，再自然眨几次眼睛？","眼睛的小假期到了。看看远方，轻轻眨眼，不用盯着我倒计时。","和小猫做个眨眼约定：先看看远处，再轻轻合上眼睑，自然睁开。"}:new[]{"让目光离开屏幕，看看远处大约二十秒，也自然完整地眨几次眼睛。","这段看完，给眼睛一点远方吧。看看远处二十秒，再轻轻眨眨眼。","抬眼看看远处，好吗？目光放远片刻，也记得自然眨眼。"};break;
         case "posture":choices=brief?new[]{"放松肩膀，换个舒服的坐姿。","双手离开键盘片刻，轻轻活动手指。","背部靠稳，双脚有支撑。"}:playful?new[]{"检查一下肩膀有没有悄悄耸起来？放松它，找个舒服的位置。","鼠标也想歇会。松开它，让手指轻轻张开再放松。","椅子下面也照顾一下：让双脚踏实落地，背部舒服地靠稳。","爪爪舒展时间。手腕放自然，轻轻活动手指和前臂就好。"}:new[]{"肩膀还放松吗？换个舒服的坐姿，背部靠稳，双脚有支撑。","双手暂时离开键盘和鼠标，轻轻张开手指，再放松。","留意一下手腕有没有一直折着，轻轻活动手指和前臂，做到舒服就好。","检查一下背部和双脚的支撑，也让肩膀松一松。","舒服的姿势也可以换一换。轻轻调整椅背或双脚的位置吧。"};break;
         case "rest":choices=brief?new[]{"起身走走，离屏休息五分钟。","放下电脑，留五分钟给自己走动和休息。"}:playful?new[]{"椅子申请五分钟独处。你去走走歇会儿，我负责看桌面。","给工作按个小暂停。离开座位走两步，歇五分钟再回来。","小猫值班，人类休息。起来走一走，给自己五分钟离屏时间吧。"}:new[]{"这段告一段落的话，起来走一走，留五分钟给自己离屏休息。","放下鼠标，离开座位走走吧。歇五分钟，再慢慢继续。","方便的话，给自己一次完整的小休息。起身走动，离屏歇五分钟。"};break;
         case "water":choices=brief?new[]{"想喝点水吗？按自己的需要来。","方便的话喝几口水。"}:playful?new[]{"水杯发来一条好友申请，要不要见见它？","工作的小间隙，要不要顺手端一下水杯？"}:new[]{"手边有水吗？方便的话喝几口，按自己的需要来。","忙完手上这一步，想不想喝点水？","也照顾一下自己的饮水需要吧，有需要就喝几口。"};break;
-        default:return "找个合适的时机，照顾一下自己。";
+        default:return new[]{"找个合适的时机，照顾一下自己。"};
       }
-      string message=Pick(key+options.Tone,choices);
-      return message;
+      return choices;
     }
     internal string Play(string kind){
       if(kind=="pet")return Pick("pet",new[]{"摸摸收到，今天这只小猫的心情是晴天。","呼噜呼噜……谢谢你的摸摸，也记得对自己温柔一点。","额头贴贴。今天也很高兴能陪你待一会儿。","收到一份摸摸，回赠你一个小小的好心情。","小猫往你的手心蹭了一下，然后认真坐好。"});

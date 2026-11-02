@@ -8,7 +8,7 @@ using Microsoft.Win32;
 namespace RestBuddy {
   internal sealed class Settings : Form {
     internal Label State;private readonly Buddy buddy;
-    private TextBox name,editor,newsUrl;private ComboBox quoteKind,newsPreset;private CheckBox shares,onlineQuotes,newsEnabled;private NumericUpDown shareMinutes,newsMinutes;private CheckBox autoNews,newsJitter;private ComboBox tone,frequency,mode,topic;private TabControl tabs;
+    private TextBox name,editor,newsUrl,builtins,sourceDetails;private ComboBox quoteKind,newsPreset;private CheckBox shares,onlineQuotes,newsEnabled;private NumericUpDown shareMinutes,newsMinutes;private CheckBox autoNews,newsJitter;private ComboBox tone,frequency,mode,topic;private TabControl tabs;
     private readonly Dictionary<string,CheckBox> toggles=new Dictionary<string,CheckBox>();
     private readonly Dictionary<string,NumericUpDown> minutes=new Dictionary<string,NumericUpDown>();
     private readonly Dictionary<string,string> custom;
@@ -16,12 +16,12 @@ namespace RestBuddy {
     private DateTimePicker begin,end,lbegin,lend;private int editing=-1;
     internal Settings(Buddy value){
       buddy=value;custom=new Dictionary<string,string>(buddy.Options.CustomMessages);
-      Text="小歇 · 关怀设置";Font=Style.Font(9);BackColor=Style.Bg;StartPosition=FormStartPosition.CenterScreen;FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;AutoScaleMode=AutoScaleMode.Dpi;ClientSize=new Size(485,565);
-      TableLayoutPanel root=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(18),ColumnCount=1,RowCount=3};root.RowStyles.Add(new RowStyle(SizeType.AutoSize));root.RowStyles.Add(new RowStyle(SizeType.Percent,100));root.RowStyles.Add(new RowStyle(SizeType.AutoSize));Controls.Add(root);
+      Text="小歇 · 关怀设置";Font=Style.Font(9);BackColor=Style.Bg;StartPosition=FormStartPosition.CenterScreen;FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;AutoScaleMode=AutoScaleMode.Dpi;ClientSize=new Size(440,360);
+      TableLayoutPanel root=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(8),ColumnCount=1,RowCount=3};root.RowStyles.Add(new RowStyle(SizeType.AutoSize));root.RowStyles.Add(new RowStyle(SizeType.Percent,100));root.RowStyles.Add(new RowStyle(SizeType.AutoSize));Controls.Add(root);
       State=Style.Label(buddy.State(),10);State.ForeColor=Style.Green;root.Controls.Add(State,0,0);
-      tabs=new TabControl{Dock=DockStyle.Fill,Margin=new Padding(0,8,0,8)};root.Controls.Add(tabs,0,1);
+      tabs=new TabControl{Dock=DockStyle.Fill,Margin=new Padding(0,3,0,3)};root.Controls.Add(tabs,0,1);
       FlowLayoutPanel companion=FlowPage(tabs,"陪伴");
-      PictureBox picture=new PictureBox{Size=new Size(100,90),Margin=new Padding(125,6,0,2)};picture.Paint+=(s,e)=>PetPainter.Draw(e.Graphics,90,0,false);companion.Controls.Add(picture);
+
       name=new TextBox{Text=buddy.Options.PetName,MaxLength=12,Width=200};companion.Controls.Add(Row("名字",name));
       tone=Combo(new[]{"温柔","俏皮","简短"},buddy.Options.Tone);companion.Controls.Add(Row("说话语气",tone));
       frequency=Combo(new[]{"轻声","适中","积极"},buddy.Options.Frequency);companion.Controls.Add(Row("关怀频率",frequency));
@@ -29,15 +29,16 @@ namespace RestBuddy {
       workCheck=Check("每天开工时检查工位",buddy.Options.WorkStartCheck);companion.Controls.Add(workCheck);
       FlowLayoutPanel care=FlowPage(tabs,"关怀");
       TableLayoutPanel grid=new TableLayoutPanel{AutoSize=true,Width=350,ColumnCount=3};grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,85));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,45));
-      grid.Controls.Add(Style.Label("关怀主题",9),0,0);grid.Controls.Add(Style.Label("参考分钟",9),1,0);int row=1;
-      foreach(Rule r in buddy.Options.Rules){CheckBox enabled=Check(r.Name,r.Enabled);enabled.Margin=new Padding(4,10,4,8);NumericUpDown n=new NumericUpDown{Minimum=1,Maximum=480,Value=r.Minutes,Width=70,Margin=new Padding(4,9,4,6)};grid.Controls.Add(enabled,0,row);grid.Controls.Add(n,1,row);grid.Controls.Add(Style.Label("分钟",9),2,row);toggles[r.Key]=enabled;minutes[r.Key]=n;row++;}care.Controls.Add(grid);
-      Label reference=Style.Label("结合使用状态和反馈调整，不按固定整点提醒",9);reference.ForeColor=Style.Muted;care.Controls.Add(reference);
-      TabPage messages=new TabPage("文案"){BackColor=Style.Bg,Padding=new Padding(10)};tabs.TabPages.Add(messages);
-      TableLayoutPanel writing=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=4};writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.Percent,100));writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));messages.Controls.Add(writing);
+      grid.Controls.Add(Style.Label("关怀主题",9),0,0);grid.Controls.Add(Style.Label("间隔分钟",9),1,0);int row=1;
+      foreach(Rule r in buddy.Options.Rules){CheckBox enabled=Check(r.Name,r.Enabled);enabled.Margin=new Padding(4,4,4,4);NumericUpDown n=new NumericUpDown{Minimum=1,Maximum=480,Value=r.Minutes,Width=70,Margin=new Padding(4,3,4,3)};grid.Controls.Add(enabled,0,row);grid.Controls.Add(n,1,row);grid.Controls.Add(Style.Label("分钟",9),2,row);toggles[r.Key]=enabled;minutes[r.Key]=n;row++;}care.Controls.Add(grid);
+      Label reference=Style.Label("按电脑活跃时间累计；这是提醒间隔，不是动作时长。",9);reference.ForeColor=Style.Muted;care.Controls.Add(reference);
+      TabPage messages=new TabPage("文案"){BackColor=Style.Bg,Padding=new Padding(6)};tabs.TabPages.Add(messages);
+      TableLayoutPanel writing=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=6};writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.Percent,40));writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.Percent,60));messages.Controls.Add(writing);
       topic=Combo(buddy.Options.Rules.Select(r=>r.Name).ToArray(),buddy.Options.Rules[0].Name);writing.Controls.Add(topic,0,0);
       Label help=Style.Label("每行一句；留空使用内置文案；可写 {名字}",9);help.ForeColor=Style.Muted;writing.Controls.Add(help,0,1);
       editor=new TextBox{Multiline=true,Dock=DockStyle.Fill,ScrollBars=ScrollBars.Vertical,MaxLength=4000,AcceptsReturn=true,BorderStyle=BorderStyle.FixedSingle};writing.Controls.Add(editor,0,2);writing.Controls.Add(Style.Button("使用内置文案",()=>editor.Text=""),0,3);
-      topic.SelectedIndexChanged+=(s,e)=>LoadTopic();LoadTopic();
+      builtins=new TextBox{Multiline=true,ReadOnly=true,Dock=DockStyle.Fill,ScrollBars=ScrollBars.Vertical,BackColor=Style.Bg};writing.Controls.Add(Style.Label("内置动作与文案（只读）",9),0,4);writing.Controls.Add(builtins,0,5);
+      topic.SelectedIndexChanged+=(s,e)=>LoadTopic();tone.SelectedIndexChanged+=(s,e)=>RefreshBuiltins();LoadTopic();
       FlowLayoutPanel content=FlowPage(tabs,"内容");
       newsEnabled=Check("允许获取新闻 / 快讯",buddy.Options.NewsEnabled);content.Controls.Add(newsEnabled);
       autoNews=Check("自动随机展示一条快讯",buddy.Options.AutoNews);content.Controls.Add(autoNews);
@@ -45,28 +46,33 @@ namespace RestBuddy {
       newsJitter=Check("时间略微随机（间隔上下浮动两成）",buddy.Options.NewsJitter);content.Controls.Add(newsJitter);
       newsPreset=Combo(NewsFeeds.Names,NewsFeeds.Names[NewsFeeds.Index(buddy.Options)]);newsPreset.Width=245;content.Controls.Add(Row("新闻来源",newsPreset));
       newsUrl=new TextBox{Text=buddy.Options.NewsUrl,Width=340,Margin=new Padding(4,8,4,8),MaxLength=2048,Visible=newsPreset.SelectedIndex==5};content.Controls.Add(newsUrl);
-      newsPreset.SelectedIndexChanged+=(s,e)=>{if(newsPreset.SelectedIndex!=5)newsUrl.Text=NewsFeeds.Url(newsPreset.SelectedIndex);newsUrl.Visible=newsPreset.SelectedIndex==5;};
-      FlowLayoutPanel sourceButtons=new FlowLayoutPanel{AutoSize=true,WrapContents=true};sourceButtons.Controls.Add(Style.Button("立即展示一条",()=>buddy.ShareContent(true,true)));sourceButtons.Controls.Add(Style.Button("听一句话",()=>buddy.ShareContent(false,true)));content.Controls.Add(sourceButtons);
-      Label sourceHint=Style.Label("财经源使用公开 RSS 中转；修改后保存",9);sourceHint.ForeColor=Style.Muted;content.Controls.Add(sourceHint);
+      newsPreset.SelectedIndexChanged+=(s,e)=>{if(newsPreset.SelectedIndex!=5)newsUrl.Text=NewsFeeds.Url(newsPreset.SelectedIndex);newsUrl.Visible=newsPreset.SelectedIndex==5;UpdateSources();};newsUrl.TextChanged+=(s,e)=>UpdateSources();
+      sourceDetails=new TextBox{Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,WordWrap=false,Width=370,Height=105,BackColor=Style.Bg};content.Controls.Add(sourceDetails);UpdateSources();
+      FlowLayoutPanel sourceButtons=new FlowLayoutPanel{AutoSize=true,WrapContents=true};sourceButtons.Controls.Add(Style.Button("保存并读新闻",()=>{Apply();if(IsDisposed)buddy.ShareContent(true,true);}));sourceButtons.Controls.Add(Style.Button("保存并听语录",()=>{Apply();if(IsDisposed)buddy.ShareContent(false,true);}));content.Controls.Add(sourceButtons);
+      Label sourceHint=Style.Label("接口无需密钥；修改后点保存生效",9);sourceHint.ForeColor=Style.Muted;content.Controls.Add(sourceHint);
       shares=Check("偶尔自动分享语录",buddy.Options.ShareEnabled);content.Controls.Add(shares);
       shareMinutes=new NumericUpDown{Minimum=30,Maximum=360,Value=buddy.Options.ShareMinutes,Width=130};content.Controls.Add(Row("语录分钟",shareMinutes));
       onlineQuotes=Check("在线语录：一言（无密钥）",buddy.Options.OnlineQuotes);content.Controls.Add(onlineQuotes);
       quoteKind=Combo(new[]{"随机","诗词","文学","动漫","影视"},buddy.Options.QuoteKind);content.Controls.Add(Row("语录类别",quoteKind));
+      TextBox quoteSource=new TextBox{Multiline=true,ReadOnly=true,Width=370,Height=64,ScrollBars=ScrollBars.Vertical,Text="一言 API：https://v1.hitokoto.cn/\r\n类别：随机 d/i/k，诗词 i，文学 d，动漫 a，影视 h；5–60 字。\r\n失败时使用缓存或内置短句；最多缓存 40 条。",BackColor=Style.Bg};content.Controls.Add(quoteSource);
       FlowLayoutPanel timing=FlowPage(tabs,"时段");
       work=Check("仅工作时段提醒",buddy.Options.WorkHours);timing.Controls.Add(work);timing.Controls.Add(TimeRow(buddy.Options.Start,buddy.Options.End,out begin,out end));
       week=Check("仅周一至周五",buddy.Options.Weekdays);timing.Controls.Add(week);
       lunch=Check("午休时安静",buddy.Options.Lunch);timing.Controls.Add(lunch);timing.Controls.Add(TimeRow(buddy.Options.LunchStart,buddy.Options.LunchEnd,out lbegin,out lend));
       idle=Check("三分钟未操作时暂停提醒",buddy.Options.IdlePause);fullscreen=Check("全屏时安静",buddy.Options.FullscreenPause);sound=Check("提示音",buddy.Options.Sound);startup=Check("开机启动",StartupEnabled());foreach(Control c in new Control[]{idle,fullscreen,sound,startup})timing.Controls.Add(c);
       FlowLayoutPanel buttons=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Fill,WrapContents=false};buttons.Controls.Add(Style.Button("保存",Apply));buttons.Controls.Add(Style.Button("示范关怀",()=>PreviewDraft()));buttons.Controls.Add(Style.Button("安静一小时",buddy.Pause));root.Controls.Add(buttons,0,2);
+      tabs.SelectedIndexChanged+=(s,e)=>{float scale=DeviceDpi/96f;ClientSize=new Size((int)(440*scale),(int)((tabs.SelectedIndex==1?340:tabs.SelectedIndex==0?360:420)*scale));};
     }
+    private void UpdateSources(){if(sourceDetails==null)return;int i=newsPreset.SelectedIndex;string urls=i==6?"科技 · IT之家\r\n"+NewsFeeds.IT+"\r\n国际 · 中新网\r\n"+NewsFeeds.World+"\r\n生活 · 中新网\r\n"+NewsFeeds.Life+"\r\n财经 · 金十（RSSHub中转）\r\n"+NewsFeeds.Jin10:i==0?NewsFeeds.Jin10+"\r\n"+NewsFeeds.Wallstreet:i==5?newsUrl.Text:NewsFeeds.Url(i);sourceDetails.Text=urls+"\r\n"+(i==6?"依次轮换，类内随机未读；失败跳过。时效 24 小时，生活 72 小时。":"财经混合随机双源；单源自动选近 8 小时未读。")+"\r\n缓存 3 分钟；最多 5 源×60 条，已读 200 条。";}
     private void Stash(){if(editing>=0)custom[buddy.Options.Rules[editing].Key]=editor.Text;}
-    private void LoadTopic(){Stash();editing=topic.SelectedIndex;if(editing<0)return;string text;editor.Text=custom.TryGetValue(buddy.Options.Rules[editing].Key,out text)?text:"";}
+    private void LoadTopic(){Stash();editing=topic.SelectedIndex;if(editing<0)return;string text;editor.Text=custom.TryGetValue(buddy.Options.Rules[editing].Key,out text)?text:"";RefreshBuiltins();}
+    private void RefreshBuiltins(){if(editing<0||builtins==null)return;string key=buddy.Options.Rules[editing].Key;Options display=new Options{Tone=tone.Text};builtins.Text=CareActionPicker.BuiltIns(key)+"\r\n\r\n主题文案 · "+tone.Text+"\r\n"+String.Join("\r\n",new CareText(display).BuiltInLines(key));}
     private void PreviewDraft(){Stash();string oldName=buddy.Options.PetName,oldTone=buddy.Options.Tone;Dictionary<string,string> oldCustom=buddy.Options.CustomMessages;
       try{buddy.Options.PetName=String.IsNullOrWhiteSpace(name.Text)?"小歇":name.Text.Trim();buddy.Options.Tone=tone.Text;buddy.Options.CustomMessages=custom;if(tabs.SelectedIndex==2)buddy.PreviewTopic(buddy.Options.Rules[editing].Key);else buddy.Preview();}
       finally{buddy.Options.PetName=oldName;buddy.Options.Tone=oldTone;buddy.Options.CustomMessages=oldCustom;}
     }
-    private FlowLayoutPanel FlowPage(TabControl tabs,string title){TabPage page=new TabPage(title){BackColor=Style.Bg,Padding=new Padding(10)};tabs.TabPages.Add(page);FlowLayoutPanel flow=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};page.Controls.Add(flow);return flow;}
-    private Control Row(string title,Control control){FlowLayoutPanel row=new FlowLayoutPanel{AutoSize=true,WrapContents=false,Margin=new Padding(0,7,0,7)};Label label=Style.Label(title,9);label.AutoSize=false;label.Width=90;label.Height=24;row.Controls.Add(label);control.Margin=new Padding(3,7,3,3);row.Controls.Add(control);return row;}
+    private FlowLayoutPanel FlowPage(TabControl tabs,string title){TabPage page=new TabPage(title){BackColor=Style.Bg,Padding=new Padding(6)};tabs.TabPages.Add(page);FlowLayoutPanel flow=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};page.Controls.Add(flow);return flow;}
+    private Control Row(string title,Control control){FlowLayoutPanel row=new FlowLayoutPanel{AutoSize=true,WrapContents=false,Margin=new Padding(0,1,0,1)};Label label=Style.Label(title,9);label.AutoSize=false;label.Width=78;label.Height=24;row.Controls.Add(label);control.Margin=new Padding(3,3,3,1);row.Controls.Add(control);return row;}
     private ComboBox Combo(string[] entries,string selected){ComboBox box=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,Width=200};box.Items.AddRange(entries);box.SelectedItem=selected;if(box.SelectedIndex<0)box.SelectedIndex=0;return box;}
     private CheckBox Check(string title,bool selected){return new CheckBox{Text=title,Checked=selected,AutoSize=true,Margin=new Padding(4,6,4,6)};}
     private Control TimeRow(string a,string b,out DateTimePicker first,out DateTimePicker second){FlowLayoutPanel row=new FlowLayoutPanel{AutoSize=true,WrapContents=false};first=Picker(a);second=Picker(b);row.Controls.Add(first);row.Controls.Add(Style.Label("至",9));row.Controls.Add(second);return row;}

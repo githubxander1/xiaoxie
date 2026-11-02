@@ -19,6 +19,7 @@ namespace RestBuddy {
       new CareAction("walk","rest","离座走走","起来走两步，留五分钟给自己离屏休息。","放下电脑，起身走一走，按自己的情况活动。留五分钟离屏时间，休息好了再回来。",300),
       new CareAction("pause","rest","离屏小休息","给工作一个小暂停，离开屏幕歇五分钟吧。","暂时离开电脑，可以换个位置、起身走动，按自己的情况休息五分钟。",300)
     };
+    internal static string BuiltIns(string key){return String.Join("\r\n\r\n",Actions.Where(a=>a.Key==key).Select(a=>a.Title+"（"+a.Seconds+" 秒）\r\n"+a.Prompt+"\r\n"+a.Instructions));}
     internal CareActionPicker(Random source){random=source;}
     internal CareAction Next(string key){
       var pool=Actions.Where(x=>x.Key==key).ToList();if(pool.Count==0)return null;string last;previous.TryGetValue(key,out last);
