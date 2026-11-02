@@ -73,7 +73,7 @@ namespace RestBuddy {
       }
       if(active&&!wasActive){Engine.ResumeBuffer(now);if(previousReason=="安静等你回来")Pet.LastWords="欢迎回来。如果刚才已经休息过，可以告诉我，我会调整关怀。";}
       wasActive=active;previousReason=context;
-      if(active){Engine.AddActive(elapsed);if(elapsed>0&&elapsed<=30)shareActive+=elapsed;}
+      if(active||(context=="全屏时安静陪伴"&&!Native.Idle())){Engine.AddActive(elapsed);if(elapsed>0&&elapsed<=30)shareActive+=elapsed;}
       if((now-lastProgressSave).TotalSeconds>=30){Engine.SaveProgress(Store.Folder,now);lastProgressSave=now;}
       tray.Text=Short(Options.PetName+" · "+state,60);
       if(settings!=null&&!settings.IsDisposed)settings.State.Text=active?"设置打开中，关闭后恢复自动提醒":state;

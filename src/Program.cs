@@ -11,7 +11,7 @@ using Microsoft.Win32;
 
 [assembly:System.Runtime.CompilerServices.InternalsVisibleTo("RestBuddy.Checks")]
 [assembly:System.Reflection.AssemblyTitle("小歇")]
-[assembly:System.Reflection.AssemblyVersion("0.5.8.0")]
+[assembly:System.Reflection.AssemblyVersion("0.5.9.0")]
 namespace RestBuddy {
   public sealed class Rule {
     public string Key,Name,Message;public int Minutes;public bool Enabled;
@@ -78,7 +78,8 @@ namespace RestBuddy {
     [DllImport("user32.dll")]internal static extern bool SetProcessDPIAware();
     [DllImport("user32.dll")]internal static extern bool DestroyIcon(IntPtr icon);
     internal static bool Idle(){Input input=new Input{cbSize=(uint)Marshal.SizeOf(typeof(Input))};return GetLastInputInfo(ref input)&&unchecked((uint)Environment.TickCount-input.dwTime)>=180000;}
-    internal static bool Fullscreen(){IntPtr h=GetForegroundWindow();if(h==IntPtr.Zero)return false;System.Text.StringBuilder name=new System.Text.StringBuilder(256);GetClassName(h,name,256);if(new[]{"Progman","WorkerW","Shell_TrayWnd"}.Contains(name.ToString()))return false;Rect r;if(!GetWindowRect(h,out r))return false;Rectangle screen=Screen.FromHandle(h).Bounds;return r.Left<=screen.Left&&r.Top<=screen.Top&&r.Right>=screen.Right&&r.Bottom>=screen.Bottom;}
+    [DllImport("user32.dll")]internal static extern bool IsZoomed(IntPtr hwnd);
+    internal static bool Fullscreen(){IntPtr h=GetForegroundWindow();if(h==IntPtr.Zero||IsZoomed(h))return false;System.Text.StringBuilder name=new System.Text.StringBuilder(256);GetClassName(h,name,256);if(new[]{"Progman","WorkerW","Shell_TrayWnd"}.Contains(name.ToString()))return false;Rect r;if(!GetWindowRect(h,out r))return false;Rectangle screen=Screen.FromHandle(h).Bounds;return r.Left<=screen.Left&&r.Top<=screen.Top&&r.Right>=screen.Right&&r.Bottom>=screen.Bottom;}
   }
   internal static class Style {
     internal static Color Ink=Color.FromArgb(38,56,49),Green=Color.FromArgb(23,90,73),Muted=Color.FromArgb(111,126,116),Bg=Color.FromArgb(249,251,248);
