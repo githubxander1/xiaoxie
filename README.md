@@ -10,7 +10,7 @@
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4)
 ![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.8-512BD4)
-![Version](https://img.shields.io/badge/version-0.5.4-527A59)
+![Version](https://img.shields.io/badge/version-0.5.5-527A59)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 [快速开始](#快速开始) · [功能](#功能) · [自动快讯](#自动快讯) · [源码构建](#源码构建) · [数据与隐私](#数据与隐私)
@@ -218,3 +218,5 @@ SOURCES.md       接口来源与健康内容参考
 感谢一言、RSSHub、DailyHotApi 与各新闻 RSS 来源；健康关怀的内容参考列于 [SOURCES.md](SOURCES.md)。
 
 多元新闻默认轮换科技（IT之家）、国际（中新网）、生活（中新网）、财经（金十）。同类随机挑选未读内容，失败跳过。普通新闻保留近 24 小时、生活近 72 小时，显示发布时间。内容设置可以切换回单一来源。
+
+弹窗优化（v0.5.5）：移除重复的顶部名称，正文保留原字号、按内容高度显示；压缩按钮和段间空白，超长内容仍可滚动。自动倒计时缩至约 260×56。
