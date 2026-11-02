@@ -1,7 +1,13 @@
 ﻿using System;
 using System.Linq;
+using System.IO;
+using System.Web.Script.Serialization;
 using System.Collections.Generic;
 namespace RestBuddy {
+  public sealed class CareProgress {
+    public string Day;public DateTime SavedUtc,LastPrompt,Cooldown,Quiet,Feedback;public string LastPrimary;
+    public Dictionary<string,double> Effort,Threshold;public Dictionary<string,string> Configured;public Dictionary<string,DateTime> Offered,LastOffered;public Dictionary<string,int> Shown;
+  }
   internal sealed class CareEngine {
     private readonly Options options;private readonly Random random;
     private readonly Dictionary<string,double> effort=new Dictionary<string,double>(),threshold=new Dictionary<string,double>();
@@ -57,6 +63,13 @@ namespace RestBuddy {
       lastPrimary=primary.Key;lastPrompt=now;CooldownUntil=now.AddMinutes(primary.Key=="eyes"?Math.Min(10,Spacing):Spacing);return result;
     }
     private bool Eligible(string key,double ratio,DateTime now){return options.Rules.Any(r=>r.Key==key&&r.Enabled)&&effort[key]>=threshold[key]*ratio&&now>=offered[key];}
-    internal string Report(){return String.Join("\n",options.Rules.Where(r=>r.Enabled).Select(r=>r.Name+"：本轮电脑使用约 "+Math.Floor(MinutesFor(r.Key))+" 分钟"));}
+    internal void SaveProgress(string folder,DateTime now){try{Directory.CreateDirectory(folder);string file=Path.Combine(folder,"care-progress.json"),temp=file+".tmp";var state=new CareProgress{Day=now.ToLocalTime().ToString("yyyy-MM-dd"),SavedUtc=now,LastPrompt=lastPrompt,Cooldown=CooldownUntil,Quiet=QuietUntil,Feedback=feedbackBuffer,LastPrimary=lastPrimary,Effort=effort,Threshold=threshold,Configured=configured,Offered=offered,LastOffered=lastOffered,Shown=shown};File.WriteAllText(temp,new JavaScriptSerializer().Serialize(state));if(File.Exists(file))File.Replace(temp,file,file+".bak");else File.Move(temp,file);}catch{}}
+    internal void LoadProgress(string folder,DateTime now){CareProgress state=null;string file=Path.Combine(folder,"care-progress.json");try{state=new JavaScriptSerializer().Deserialize<CareProgress>(File.ReadAllText(file));}catch{try{state=new JavaScriptSerializer().Deserialize<CareProgress>(File.ReadAllText(file+".bak"));}catch{}}
+      if(state==null||state.Day!=now.ToLocalTime().ToString("yyyy-MM-dd")||state.SavedUtc>now||state.Effort==null||state.Threshold==null||state.Configured==null||state.Offered==null||state.LastOffered==null||state.Shown==null)return;
+      foreach(Rule r in options.Rules){double seconds,limit;string config;DateTime offer,last;int count;if(state.Effort.TryGetValue(r.Key,out seconds)&&state.Threshold.TryGetValue(r.Key,out limit)&&state.Configured.TryGetValue(r.Key,out config)&&config==Config(r)&&state.Offered.TryGetValue(r.Key,out offer)&&state.LastOffered.TryGetValue(r.Key,out last)&&state.Shown.TryGetValue(r.Key,out count)&&seconds>=0&&seconds<=86400&&limit>0&&limit<=86400){effort[r.Key]=seconds;threshold[r.Key]=limit;offered[r.Key]=offer;lastOffered[r.Key]=last;shown[r.Key]=Math.Max(0,count);}}
+      lastPrompt=state.LastPrompt;CooldownUntil=state.Cooldown;QuietUntil=state.Quiet;feedbackBuffer=state.Feedback;lastPrimary=state.LastPrimary??"";
+    }
+    internal string Report(){return String.Join("\n",options.Rules.Where(r=>r.Enabled).Select(r=>r.Name+"：累计 "+Math.Floor(MinutesFor(r.Key))+" 分钟，"+(effort[r.Key]>=threshold[r.Key]?"已到期，等待可提醒时机":"还需约 "+Math.Ceiling((threshold[r.Key]-effort[r.Key])/60)+" 分钟活跃使用")));}
+
   }
 }

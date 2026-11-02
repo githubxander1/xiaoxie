@@ -10,7 +10,7 @@
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4)
 ![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.8-512BD4)
-![Version](https://img.shields.io/badge/version-0.5.7-527A59)
+![Version](https://img.shields.io/badge/version-0.5.8-527A59)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 [快速开始](#快速开始) · [功能](#功能) · [自动快讯](#自动快讯) · [源码构建](#源码构建) · [数据与隐私](#数据与隐私)
@@ -191,7 +191,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run.ps1 -Network
 ```
 
-检查产物和报告保存在 `build/checks`。当前包含 **54 项本地检查和 7 项联网检查**；公网服务发生超时或故障时，联网检查可能失败。
+检查产物和报告保存在 `build/checks`。当前包含 **56 项本地检查和 7 项联网检查**；公网服务发生超时或故障时，联网检查可能失败。
 
 ### 目录结构
 
@@ -224,3 +224,5 @@ SOURCES.md       接口来源与健康内容参考
 v0.5.6：设置窗口随页签紧凑调整，文案页可查看内置动作及语气文案，内容页展示 RSS/API 地址、轮换与缓存规则。修改间隔后取消旧的单项等待时间，保留累计活跃时长；无关设置不再重新随机阈值。自定义文案应用于自动与手动练习，保存时取消进行中的旧练习；新闻/语录试读先保存当前配置。
 
 v0.5.7 新增提醒记录：从小猫/托盘右键菜单或设置底部进入，分类搜索已展示的新闻、语录和健康练习，查看完整文字、展示/发布时间并打开原文。记录位于 Data/reminder-history.json，最多 500 条，超限自动淘汰最旧记录，备份仅一份；支持清空。仅从此版本起记录，旧缓存不冒充已展示历史。
+
+v0.5.8 修复同一天重启后健康计时清零：每 30 秒保存进度，完成动作/反馈及正常退出时立即保存；继续保留旧提醒等待与安静时间，不将关闭程序的时间算作使用。跨天重新开始。关怀状态显示当前原因、累计活跃分钟与距到期的活跃时间。旧版未保存的进度无法恢复。
