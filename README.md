@@ -10,7 +10,7 @@
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4)
 ![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.8-512BD4)
-![Version](https://img.shields.io/badge/version-0.5.9-527A59)
+![Version](https://img.shields.io/badge/version-0.5.10-527A59)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 [快速开始](#快速开始) · [功能](#功能) · [自动快讯](#自动快讯) · [源码构建](#源码构建) · [数据与隐私](#数据与隐私)
@@ -228,3 +228,5 @@ v0.5.7 新增提醒记录：从小猫/托盘右键菜单或设置底部进入，
 v0.5.8 修复同一天重启后健康计时清零：每 30 秒保存进度，完成动作/反馈及正常退出时立即保存；继续保留旧提醒等待与安静时间，不将关闭程序的时间算作使用。跨天重新开始。关怀状态显示当前原因、累计活跃分钟与距到期的活跃时间。旧版未保存的进度无法恢复。
 
 v0.5.9 修复普通最大化窗口被判作全屏的情况；真正全屏只暂停展示，仍累计活跃使用时间。
+
+v0.5.10：关怀状态合并到设置→关怀的每行右侧，显示累计活跃分钟、距到期时间、关闭和待保存状态，每 5 秒刷新。设置标题显示运行版本号，不再保留独立状态弹窗。

@@ -44,7 +44,7 @@ namespace RestBuddy {
       ToolStripMenuItem play=new ToolStripMenuItem("陪我一下");play.DropDownItems.Add("摸摸小猫",null,(s,e)=>Play("pet"));play.DropDownItems.Add("一起伸懒腰",null,(s,e)=>Play("stretch"));play.DropDownItems.Add("逗我一下",null,(s,e)=>Play("joke"));play.DropDownItems.Add("给我打打气",null,(s,e)=>Play("cheer"));menu.Items.Add(play);
       menu.Items.Add("提醒记录",null,(s,e)=>OpenHistory());
       menu.Items.Add("随机一句 / 台词",null,(s,e)=>ShareContent(false,true));menu.Items.Add("读条新闻",null,(s,e)=>ShareContent(true,true));
-      ToolStripMenuItem exercise=new ToolStripMenuItem("健康小练习");foreach(Rule r in Options.Rules.Where(x=>x.Key!="water")){string key=r.Key;exercise.DropDownItems.Add(r.Name,null,(s,e)=>StartCoach(key));}menu.Items.Add(exercise);menu.Items.Add("关怀状态",null,(s,e)=>ShowStatus());menu.Items.Add("工位检查",null,(s,e)=>ShowWorkCheck());
+      ToolStripMenuItem exercise=new ToolStripMenuItem("健康小练习");foreach(Rule r in Options.Rules.Where(x=>x.Key!="water")){string key=r.Key;exercise.DropDownItems.Add(r.Name,null,(s,e)=>StartCoach(key));}menu.Items.Add(exercise);menu.Items.Add("工位检查",null,(s,e)=>ShowWorkCheck());
       menu.Items.Add("我刚休息过",null,(s,e)=>Feedback("rested"));menu.Items.Add("我刚喝过水",null,(s,e)=>Feedback("water"));menu.Items.Add("安静一小时",null,(s,e)=>Pause());menu.Items.Add("继续关怀",null,(s,e)=>Resume());
       menu.Items.Add(new ToolStripSeparator());menu.Items.Add("关怀设置",null,(s,e)=>OpenSettings());menu.Items.Add("退出",null,(s,e)=>ExitThread());return menu;
     }
@@ -76,7 +76,7 @@ namespace RestBuddy {
       if(active||(context=="全屏时安静陪伴"&&!Native.Idle())){Engine.AddActive(elapsed);if(elapsed>0&&elapsed<=30)shareActive+=elapsed;}
       if((now-lastProgressSave).TotalSeconds>=30){Engine.SaveProgress(Store.Folder,now);lastProgressSave=now;}
       tray.Text=Short(Options.PetName+" · "+state,60);
-      if(settings!=null&&!settings.IsDisposed)settings.State.Text=active?"设置打开中，关闭后恢复自动提醒":state;
+      if(settings!=null&&!settings.IsDisposed){settings.State.Text=active?"设置打开中，关闭后恢复自动提醒":state;settings.UpdateCareStatus();}
       Pet.SetMood(!active||now<Engine.QuietUntil);
       if(!active||(historyWindow!=null&&!historyWindow.IsDisposed&&historyWindow.Visible)||now<Engine.QuietUntil||(bubble!=null&&!bubble.IsDisposed)||(coach!=null&&!coach.IsDisposed)||(settings!=null&&!settings.IsDisposed&&settings.Visible))return;
       if(Options.WorkStartCheck&&Options.WorkCheckDate!=DateTime.Today.ToString("yyyy-MM-dd")){Options.WorkCheckDate=DateTime.Today.ToString("yyyy-MM-dd");Persist();ShowWorkCheck();return;}
@@ -116,7 +116,7 @@ namespace RestBuddy {
     internal void Play(string kind){Pet.React(kind);ShowSpeech(Words.Play(kind),"陪我一下",new[]{new SpeechAction("再来一句","again"),new SpeechAction("一起活动","exercise"),new SpeechAction("收起","close")},action=>{if(action=="again")Play(kind);else if(action=="exercise")StartCoach("posture");else HideBubble();},36000);}
     private void FreshMenu(){ShowSpeech("想听一句台词，看看新闻，还是让我逗你笑一下？","来点新鲜的",new[]{new SpeechAction("一句话","quote"),new SpeechAction("新闻","news"),new SpeechAction("逗我一下","joke")},action=>{if(action=="quote")ShareContent(false,true);else if(action=="news")ShareContent(true,true);else if(action=="joke")Play("joke");else HideBubble();},36000);}
     internal void ShowWorkCheck(){ShowSpeech("开工前照顾一下自己的位置：屏幕有没有刺眼反光？背部和双脚有没有支撑？水杯放在顺手的位置了吗？","工位检查",new[]{new SpeechAction("检查好了","close"),new SpeechAction("今天先略过","close")},a=>HideBubble(),36000);}
-    internal void ShowStatus(){ShowSpeech("当前："+State()+"\n\n"+(Options.AutoNews&&Options.NewsEnabled?"下次自动快讯："+autoNews.DueUtc.ToLocalTime().ToString("HH:mm")+"（在可提醒时段展示）\n\n":"自动快讯已关闭\n\n")+Engine.Report()+"\n\n以上为本轮累计的电脑使用参考（同日重启保留），不代表检测到了身体状态。\n参考值到达后会综合选择关怀；新闻和语录会给健康关怀让路。","关怀状态",new[]{new SpeechAction("刚休息过","rested"),new SpeechAction("刚喝过水","water"),new SpeechAction("设置","settings")},action=>{if(action=="settings"){HideBubble();OpenSettings();}else if(action=="ignored")HideBubble();else Feedback(action);},60000);}
+
     internal void StartRandomCoach(){StartCoach(actionPicker.NextPractice(Options.Rules));}
     internal void StartCoach(string key){StartCoach(actionPicker.Next(key));}
     private void StartCoach(CareAction action,bool automatic=false){

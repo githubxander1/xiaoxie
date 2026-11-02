@@ -11,12 +11,13 @@ namespace RestBuddy {
     private TextBox name,editor,newsUrl,builtins,sourceDetails;private ComboBox quoteKind,newsPreset;private CheckBox shares,onlineQuotes,newsEnabled;private NumericUpDown shareMinutes,newsMinutes;private CheckBox autoNews,newsJitter;private ComboBox tone,frequency,mode,topic;private TabControl tabs;
     private readonly Dictionary<string,CheckBox> toggles=new Dictionary<string,CheckBox>();
     private readonly Dictionary<string,NumericUpDown> minutes=new Dictionary<string,NumericUpDown>();
+    private readonly Dictionary<string,Label> careStatus=new Dictionary<string,Label>();
     private readonly Dictionary<string,string> custom;
     private CheckBox work,week,lunch,idle,fullscreen,sound,startup,workCheck;
     private DateTimePicker begin,end,lbegin,lend;private int editing=-1;
     internal Settings(Buddy value){
       buddy=value;custom=new Dictionary<string,string>(buddy.Options.CustomMessages);
-      Text="小歇 · 关怀设置";Font=Style.Font(9);BackColor=Style.Bg;StartPosition=FormStartPosition.CenterScreen;FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;AutoScaleMode=AutoScaleMode.Dpi;ClientSize=new Size(440,360);
+      Text="小歇 v"+System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(3)+" · 设置";Font=Style.Font(9);BackColor=Style.Bg;StartPosition=FormStartPosition.CenterScreen;FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;AutoScaleMode=AutoScaleMode.Dpi;ClientSize=new Size(440,360);
       TableLayoutPanel root=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(8),ColumnCount=1,RowCount=3};root.RowStyles.Add(new RowStyle(SizeType.AutoSize));root.RowStyles.Add(new RowStyle(SizeType.Percent,100));root.RowStyles.Add(new RowStyle(SizeType.AutoSize));Controls.Add(root);
       State=Style.Label(buddy.State(),10);State.ForeColor=Style.Green;root.Controls.Add(State,0,0);
       tabs=new TabControl{Dock=DockStyle.Fill,Margin=new Padding(0,3,0,3)};root.Controls.Add(tabs,0,1);
@@ -28,10 +29,11 @@ namespace RestBuddy {
       mode=Combo(new[]{"展开小猫","收成小点","隐藏到托盘"},buddy.Options.Mode=="compact"?"收成小点":buddy.Options.Mode=="hidden"?"隐藏到托盘":"展开小猫");companion.Controls.Add(Row("显示方式",mode));
       workCheck=Check("每天开工时检查工位",buddy.Options.WorkStartCheck);companion.Controls.Add(workCheck);
       FlowLayoutPanel care=FlowPage(tabs,"关怀");
-      TableLayoutPanel grid=new TableLayoutPanel{AutoSize=true,Width=350,ColumnCount=3};grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,85));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,45));
-      grid.Controls.Add(Style.Label("关怀主题",9),0,0);grid.Controls.Add(Style.Label("间隔分钟",9),1,0);int row=1;
-      foreach(Rule r in buddy.Options.Rules){CheckBox enabled=Check(r.Name,r.Enabled);enabled.Margin=new Padding(4,4,4,4);NumericUpDown n=new NumericUpDown{Minimum=1,Maximum=480,Value=r.Minutes,Width=70,Margin=new Padding(4,3,4,3)};grid.Controls.Add(enabled,0,row);grid.Controls.Add(n,1,row);grid.Controls.Add(Style.Label("分钟",9),2,row);toggles[r.Key]=enabled;minutes[r.Key]=n;row++;}care.Controls.Add(grid);
-      Label reference=Style.Label("按电脑活跃时间累计；这是提醒间隔，不是动作时长。",9);reference.ForeColor=Style.Muted;care.Controls.Add(reference);
+      TableLayoutPanel grid=new TableLayoutPanel{AutoSize=true,Width=392,ColumnCount=3,Margin=Padding.Empty};grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,92));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,80));grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+      grid.Controls.Add(Style.Label("关怀主题",9),0,0);grid.Controls.Add(Style.Label("间隔/分",9),1,0);grid.Controls.Add(Style.Label("当前状态",9),2,0);int row=1;
+      foreach(Rule r in buddy.Options.Rules){CheckBox enabled=Check(r.Name,r.Enabled);enabled.Margin=new Padding(4,4,4,4);NumericUpDown n=new NumericUpDown{Minimum=1,Maximum=480,Value=r.Minutes,Width=70,Margin=new Padding(4,3,4,3)};grid.Controls.Add(enabled,0,row);grid.Controls.Add(n,1,row);Label progress=Style.Label("",9);progress.ForeColor=Style.Muted;progress.Margin=new Padding(4,5,0,4);grid.Controls.Add(progress,2,row);careStatus[r.Key]=progress;toggles[r.Key]=enabled;minutes[r.Key]=n;enabled.CheckedChanged+=(s,e)=>UpdateCareStatus();n.ValueChanged+=(s,e)=>UpdateCareStatus();row++;}care.Controls.Add(grid);
+      UpdateCareStatus();frequency.SelectedIndexChanged+=(s,e)=>UpdateCareStatus();
+      Label reference=Style.Label("按活跃时间累计；状态每 5 秒更新，修改后保存生效。",9);reference.Margin=new Padding(4,3,4,0);reference.ForeColor=Style.Muted;care.Controls.Add(reference);
       TabPage messages=new TabPage("文案"){BackColor=Style.Bg,Padding=new Padding(6)};tabs.TabPages.Add(messages);
       TableLayoutPanel writing=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=6};writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.Percent,40));writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.AutoSize));writing.RowStyles.Add(new RowStyle(SizeType.Percent,60));messages.Controls.Add(writing);
       topic=Combo(buddy.Options.Rules.Select(r=>r.Name).ToArray(),buddy.Options.Rules[0].Name);writing.Controls.Add(topic,0,0);
@@ -63,6 +65,7 @@ namespace RestBuddy {
       FlowLayoutPanel buttons=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Fill,WrapContents=false};buttons.Controls.Add(Style.Button("保存",Apply));buttons.Controls.Add(Style.Button("示范关怀",()=>PreviewDraft()));buttons.Controls.Add(Style.Button("提醒记录",buddy.OpenHistory));root.Controls.Add(buttons,0,2);
       tabs.SelectedIndexChanged+=(s,e)=>{float scale=DeviceDpi/96f;ClientSize=new Size((int)(440*scale),(int)((tabs.SelectedIndex==1?340:tabs.SelectedIndex==0?360:420)*scale));};
     }
+    internal void UpdateCareStatus(){foreach(Rule r in buddy.Options.Rules){Label label;if(!careStatus.TryGetValue(r.Key,out label))continue;bool dirty=toggles[r.Key].Checked!=r.Enabled||(int)minutes[r.Key].Value!=r.Minutes||frequency.Text!=buddy.Options.Frequency;label.Text=dirty?"修改待保存":buddy.Engine.StatusFor(r.Key);}}
     private void UpdateSources(){if(sourceDetails==null)return;int i=newsPreset.SelectedIndex;string urls=i==6?"科技 · IT之家\r\n"+NewsFeeds.IT+"\r\n国际 · 中新网\r\n"+NewsFeeds.World+"\r\n生活 · 中新网\r\n"+NewsFeeds.Life+"\r\n财经 · 金十（RSSHub中转）\r\n"+NewsFeeds.Jin10:i==0?NewsFeeds.Jin10+"\r\n"+NewsFeeds.Wallstreet:i==5?newsUrl.Text:NewsFeeds.Url(i);sourceDetails.Text=urls+"\r\n"+(i==6?"依次轮换，类内随机未读；失败跳过。时效 24 小时，生活 72 小时。":"财经混合随机双源；单源自动选近 8 小时未读。")+"\r\n缓存 3 分钟；最多 5 源×60 条，已读 200 条。";}
     private void Stash(){if(editing>=0)custom[buddy.Options.Rules[editing].Key]=editor.Text;}
     private void LoadTopic(){Stash();editing=topic.SelectedIndex;if(editing<0)return;string text;editor.Text=custom.TryGetValue(buddy.Options.Rules[editing].Key,out text)?text:"";RefreshBuiltins();}

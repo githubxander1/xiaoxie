@@ -69,6 +69,7 @@ namespace RestBuddy {
       foreach(Rule r in options.Rules){double seconds,limit;string config;DateTime offer,last;int count;if(state.Effort.TryGetValue(r.Key,out seconds)&&state.Threshold.TryGetValue(r.Key,out limit)&&state.Configured.TryGetValue(r.Key,out config)&&config==Config(r)&&state.Offered.TryGetValue(r.Key,out offer)&&state.LastOffered.TryGetValue(r.Key,out last)&&state.Shown.TryGetValue(r.Key,out count)&&seconds>=0&&seconds<=86400&&limit>0&&limit<=86400){effort[r.Key]=seconds;threshold[r.Key]=limit;offered[r.Key]=offer;lastOffered[r.Key]=last;shown[r.Key]=Math.Max(0,count);}}
       lastPrompt=state.LastPrompt;CooldownUntil=state.Cooldown;QuietUntil=state.Quiet;feedbackBuffer=state.Feedback;lastPrimary=state.LastPrimary??"";
     }
+    internal string StatusFor(string key){Rule rule=options.Rules.First(r=>r.Key==key);if(!rule.Enabled)return "已关闭";double remaining=Math.Max(0,threshold[key]-effort[key]);return "累计 "+Math.Floor(MinutesFor(key))+" 分 · "+(remaining>0?"还需 "+Math.Ceiling(remaining/60)+" 分":"已到期，待展示");}
     internal string Report(){return String.Join("\n",options.Rules.Where(r=>r.Enabled).Select(r=>r.Name+"：累计 "+Math.Floor(MinutesFor(r.Key))+" 分钟，"+(effort[r.Key]>=threshold[r.Key]?"已到期，等待可提醒时机":"还需约 "+Math.Ceiling((threshold[r.Key]-effort[r.Key])/60)+" 分钟活跃使用")));}
 
   }
