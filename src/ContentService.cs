@@ -40,14 +40,23 @@ namespace RestBuddy {
     internal Task<ContentItem> NewsAsync(string url,bool randomRecent=false,int maxAgeHours=8){return Task.Run(()=>{lock(gate){
       if(!SafeUrl(url))throw new InvalidOperationException("请填写有效的 RSS 或热榜地址。");
       NewsBatch batch=cache.Batches.FirstOrDefault(x=>x.Url==url);bool failed=false;
-      if(batch==null||(DateTime.UtcNow-batch.FetchedUtc).TotalMinutes>=3)try{
-        List<ContentItem> news=ParseNews(Download(url),url,DateTime.UtcNow);if(news.Count==0)throw new InvalidDataException();
+      if(batch==null||(DateTime.UtcNow-batch.FetchedUtc).TotalMinutes>=(url==NewsFeeds.HelloGitHub?360:3))try{
+        List<ContentItem> news=url==NewsFeeds.HelloGitHub?DownloadHelloProjects():ParseNews(Download(url),url,DateTime.UtcNow);if(news.Count==0)throw new InvalidDataException();
         batch=new NewsBatch{Url=url,FetchedUtc=DateTime.UtcNow,Items=news.Take(60).ToList()};cache.Batches.RemoveAll(x=>x.Url==url);cache.Batches.Insert(0,batch);cache.Batches=cache.Batches.Take(5).ToList();Save();
       }catch{failed=true;}
       if(batch==null||batch.Items.Count==0)throw new InvalidOperationException("这次没取到快讯，过会儿再试，或换一个来源。");
-      List<ContentItem> pool=Candidates(batch.Items,cache.Seen,randomRecent,DateTime.UtcNow,maxAgeHours);if(pool.Count==0)throw new InvalidOperationException("暂时没有新的近期快讯。");
-      ContentItem item=randomRecent?pool[random.Next(Math.Min(15,pool.Count))]:pool[0];item.Cached=failed;return item;
+      List<ContentItem> pool=Candidates(batch.Items,cache.Seen,randomRecent&&url!=NewsFeeds.HelloGitHub,DateTime.UtcNow,maxAgeHours);if(pool.Count==0)throw new InvalidOperationException("暂时没有新的近期快讯。");
+      ContentItem item=(randomRecent||url==NewsFeeds.HelloGitHub)?pool[random.Next(url==NewsFeeds.HelloGitHub?pool.Count:Math.Min(15,pool.Count))]:pool[0];item.Cached=failed;return item;
     }});}
+    private static List<ContentItem> DownloadHelloProjects(){
+      var issues=ParseNews(Download(NewsFeeds.HelloGitHub),NewsFeeds.HelloGitHub,DateTime.UtcNow);ContentItem latest=issues.OrderByDescending(x=>x.PublishedUtc).FirstOrDefault(x=>Regex.IsMatch(x.Url??"",@"^https://hellogithub\.com/periodical/volume/\d+$"));if(latest==null)throw new InvalidDataException("HelloGitHub 月刊地址无法识别");string volume=latest.Url.Substring(latest.Url.LastIndexOf('/')+1);var result=ParseHelloProjects(Download("https://raw.githubusercontent.com/521xueweihan/HelloGitHub/master/content/HelloGitHub"+volume+".md"),volume,latest.PublishedUtc,DateTime.UtcNow);if(result.Count==0)throw new InvalidDataException("HelloGitHub 项目格式已变化");return result;
+    }
+    internal static List<ContentItem> ParseHelloProjects(string markdown,string volume,DateTime? published,DateTime now){
+      var result=new List<ContentItem>();foreach(Match m in Regex.Matches(markdown,@"^\d+、\[([^\]\r\n]+)\]\((https://[^\s)]+)\)[：:]([^\r\n]+)",RegexOptions.Multiline)){
+        string link=m.Groups[2].Value;if(link.StartsWith("https://hellogithub.com/periodical/statistics/click?target=",StringComparison.Ordinal))link=Uri.UnescapeDataString(link.Substring(link.IndexOf("target=",StringComparison.Ordinal)+7));Uri uri;if(!Uri.TryCreate(link,UriKind.Absolute,out uri)||uri.Scheme!="https"||uri.Host!="github.com"||!SafeUrl(link))continue;
+        string intro=Clean(m.Groups[3].Value);int sentence=intro.IndexOf('。');if(sentence>=0)intro=intro.Substring(0,sentence+1);if(intro.Length>240)intro=intro.Substring(0,240)+"…";string id=Identity("hellogithub|"+link);if(result.Any(x=>x.Id==id))continue;result.Add(new ContentItem{Kind="news",Id=id,Text=m.Groups[1].Value+"："+intro,Source="HelloGitHub 第 "+volume+" 期 · 开源项目",Url=link,PublishedUtc=published,FetchedUtc=now});if(result.Count>=60)break;
+      }return result;
+    }
     internal void MarkSeen(ContentItem item){lock(gate){cache.Seen.Insert(0,item.Id??item.Url);cache.Seen=cache.Seen.Distinct().Take(200).ToList();Save();}}
     internal static string Download(string url){
       if(!SafeUrl(url))throw new InvalidDataException("无效地址");System.Diagnostics.Stopwatch elapsed=System.Diagnostics.Stopwatch.StartNew();HttpWebRequest request=(HttpWebRequest)WebRequest.Create(url);request.UserAgent="RestBuddy/0.4 (+desktop companion)";request.Timeout=8000;request.ReadWriteTimeout=8000;request.AutomaticDecompression=DecompressionMethods.GZip|DecompressionMethods.Deflate;request.MaximumAutomaticRedirections=4;

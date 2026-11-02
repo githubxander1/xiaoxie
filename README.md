@@ -10,7 +10,7 @@
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4)
 ![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.8-512BD4)
-![Version](https://img.shields.io/badge/version-0.5.10-527A59)
+![Version](https://img.shields.io/badge/version-0.5.11-527A59)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 [快速开始](#快速开始) · [功能](#功能) · [自动快讯](#自动快讯) · [源码构建](#源码构建) · [数据与隐私](#数据与隐私)
@@ -191,7 +191,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run.ps1 -Network
 ```
 
-检查产物和报告保存在 `build/checks`。当前包含 **56 项本地检查和 7 项联网检查**；公网服务发生超时或故障时，联网检查可能失败。
+检查产物和报告保存在 `build/checks`。当前包含 **57 项本地检查和 8 项联网检查**；公网服务发生超时或故障时，联网检查可能失败。
 
 ### 目录结构
 
@@ -230,3 +230,5 @@ v0.5.8 修复同一天重启后健康计时清零：每 30 秒保存进度，完
 v0.5.9 修复普通最大化窗口被判作全屏的情况；真正全屏只暂停展示，仍累计活跃使用时间。
 
 v0.5.10：关怀状态合并到设置→关怀的每行右侧，显示累计活跃分钟、距到期时间、关闭和待保存状态，每 5 秒刷新。设置标题显示运行版本号，不再保留独立状态弹窗。
+
+v0.5.11：多元轮换加入 HelloGitHub 最新月刊项目，也可单独选择。官方 RSS 确定期号，官方 GitHub 月刊提供项目名称、首句介绍及链接；随机选择未读项目，沿用新闻间隔和记录模块。项目缓存 6 小时，沿用数量上限。

@@ -1,4 +1,4 @@
-# 来源与接入说明
+﻿# 来源与接入说明
 
 ## 在线内容
 
@@ -48,3 +48,11 @@
 ## 本地内容与图形
 
 小猫图形由 GDI+ 代码绘制；办公室小段子、鼓励语和离线短句为本项目编写，没有冒充名人作品。图形、文案与客户端源码按本项目 LICENSE 提供；在线来源内容除外。
+
+## HelloGitHub
+
+官方 RSS：https://hellogithub.com/rss
+
+官方月刊目录：https://github.com/521xueweihan/HelloGitHub/tree/master/content
+
+按最新期号读取 content/HelloGitHub{期号}.md，仅展示项目名称和首句介绍，标注来源与期号，链接到项目仓库。
