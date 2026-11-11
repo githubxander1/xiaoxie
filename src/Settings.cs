@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Drawing;
 using System.Windows.Forms;
@@ -63,7 +63,7 @@ namespace RestBuddy {
       lunch=Check("午休时安静",buddy.Options.Lunch);timing.Controls.Add(lunch);timing.Controls.Add(TimeRow(buddy.Options.LunchStart,buddy.Options.LunchEnd,out lbegin,out lend));
       idle=Check("三分钟未操作时暂停提醒",buddy.Options.IdlePause);fullscreen=Check("全屏时安静",buddy.Options.FullscreenPause);sound=Check("提示音",buddy.Options.Sound);startup=Check("开机启动",StartupEnabled());foreach(Control c in new Control[]{idle,fullscreen,sound,startup})timing.Controls.Add(c);
       FlowLayoutPanel buttons=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Fill,WrapContents=false};buttons.Controls.Add(Style.Button("保存",Apply));buttons.Controls.Add(Style.Button("示范关怀",()=>PreviewDraft()));buttons.Controls.Add(Style.Button("提醒记录",buddy.OpenHistory));root.Controls.Add(buttons,0,2);
-      tabs.SelectedIndexChanged+=(s,e)=>{float scale=DeviceDpi/96f;ClientSize=new Size((int)(440*scale),(int)((tabs.SelectedIndex==1?340:tabs.SelectedIndex==0?360:420)*scale));};
+      tabs.SelectedIndexChanged+=(s,e)=>{float scale=DeviceDpi/96f;ClientSize=new Size((int)(440*scale),(int)((tabs.SelectedIndex==1?340:tabs.SelectedIndex==0?390:420)*scale));};
     }
     internal void UpdateCareStatus(){foreach(Rule r in buddy.Options.Rules){Label label;if(!careStatus.TryGetValue(r.Key,out label))continue;bool dirty=toggles[r.Key].Checked!=r.Enabled||(int)minutes[r.Key].Value!=r.Minutes||frequency.Text!=buddy.Options.Frequency;label.Text=dirty?"修改待保存":buddy.Engine.StatusFor(r.Key);}}
     private void UpdateSources(){if(sourceDetails==null)return;int i=newsPreset.SelectedIndex;string urls=i==6?"科技 · IT之家\r\n"+NewsFeeds.IT+"\r\n国际 · 中新网\r\n"+NewsFeeds.World+"\r\n生活 · 中新网\r\n"+NewsFeeds.Life+"\r\n财经 · 金十（RSSHub中转）\r\n"+NewsFeeds.Jin10+"\r\n开源项目 · HelloGitHub\r\n"+NewsFeeds.HelloGitHub+"\r\n项目正文：raw.githubusercontent.com/521xueweihan/HelloGitHub/master/content/HelloGitHub{期号}.md":i==0?NewsFeeds.Jin10+"\r\n"+NewsFeeds.Wallstreet:i==5?newsUrl.Text:NewsFeeds.Url(i);if(i==9)urls+="\r\n官方 RSS 确定最新期号；官方 GitHub content/HelloGitHub{期号}.md 读取项目。\r\n最新一期随机未读，不按小时过滤；打开 GitHub 仓库。";sourceDetails.Text=urls+"\r\n"+(i==9?"已读项目跳过，最新一期读完后等待更新。":i==6?"依次轮换，类内随机未读；失败跳过。新闻时效 24 小时，生活 72 小时；开源为最新一期随机未读。":"财经混合随机双源；单源自动选近 8 小时未读。")+"\r\n新闻缓存 3 分钟，HelloGitHub 6 小时；最多 5 源×60 条，已读 200 条。";}

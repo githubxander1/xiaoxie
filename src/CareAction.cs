@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 namespace RestBuddy {
@@ -9,6 +9,11 @@ namespace RestBuddy {
   internal sealed class CareActionPicker {
     private readonly Random random;private readonly Dictionary<string,string> previous=new Dictionary<string,string>();private string lastPractice="";
     private static readonly CareAction[] Actions={
+      new CareAction("release","release","收放","轻轻收紧再放松，保持自然呼吸。","在坐姿下轻轻收紧盆底肌群几秒，再完全放松几秒。自然呼吸，不要憋气或用力；不舒服就停止。",30),
+      new CareAction("ankle","release","脚踝活动","脚尖轻轻抬起再放下，换脚也可以。","坐稳后缓慢活动脚踝，脚尖抬起、放下，再轻轻转动脚踝。动作幅度以舒服为准。",30),
+      new CareAction("knee","release","坐姿伸膝","轮流伸直一条腿，再慢慢放下。","坐稳后单腿缓慢伸直，停留片刻再放下，左右轮换。若有不适就停止。",30),
+      new CareAction("shoulderblades","release","肩胛放松","肩膀轻轻向后打开，再自然放松。","坐直但不僵硬，肩胛轻轻向后靠近，再放松回自然位置。不要耸肩或憋气。",30),
+      new CareAction("calfraise","release","轻轻提踵","方便的话站起来扶稳，脚跟抬起再放下。","站在稳固支撑旁，扶稳后缓慢踮脚再放下几次；不方便站立就跳过。",30),
       new CareAction("sip","water","喝几口水","按自己的需要，喝几口水。","按自己的需要喝水，不必为了倒计时勉强喝。",10),
       new CareAction("look","eyes","看看远处","把目光借给远处二十秒吧，也自然眨几次眼睛。","把目光移向远处约六米的位置，放松二十秒。自然眨眼，不用盯着倒计时。",20),
       new CareAction("window","eyes","眼睛小休息","先把视线移开屏幕，看看窗外或远处，轻轻眨眨眼。","视线离开屏幕，选择远处舒服的位置看看，保持自然眨眼。",20),
