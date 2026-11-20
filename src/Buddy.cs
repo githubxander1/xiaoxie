@@ -73,12 +73,13 @@ namespace RestBuddy {
       }
       if(active&&!wasActive){Engine.ResumeBuffer(now);if(previousReason=="安静等你回来")Pet.LastWords="欢迎回来。如果刚才已经休息过，可以告诉我，我会调整关怀。";}
       wasActive=active;previousReason=context;
-      if(active||(context=="全屏时安静陪伴"&&!Native.Idle())){Engine.AddActive(elapsed);if(elapsed>0&&elapsed<=30)shareActive+=elapsed;}
+      bool settingsOpen=settings!=null&&!settings.IsDisposed&&settings.Visible;
+      if(!settingsOpen&&(active||(context=="全屏时安静陪伴"&&!Native.Idle()))){Engine.AddActive(elapsed);if(elapsed>0&&elapsed<=30)shareActive+=elapsed;}
       if((now-lastProgressSave).TotalSeconds>=30){Engine.SaveProgress(Store.Folder,now);lastProgressSave=now;}
       tray.Text=Short(Options.PetName+" · "+state,60);
       if(settings!=null&&!settings.IsDisposed){settings.State.Text=active?"设置打开中，关闭后恢复自动提醒":state;settings.UpdateCareStatus();}
       Pet.SetMood(!active||now<Engine.QuietUntil);
-      if(!active||(historyWindow!=null&&!historyWindow.IsDisposed&&historyWindow.Visible)||now<Engine.QuietUntil||(bubble!=null&&!bubble.IsDisposed)||(coach!=null&&!coach.IsDisposed)||(settings!=null&&!settings.IsDisposed&&settings.Visible))return;
+      if(!active||(historyWindow!=null&&!historyWindow.IsDisposed&&historyWindow.Visible)||now<Engine.QuietUntil||(bubble!=null&&!bubble.IsDisposed)||(coach!=null&&!coach.IsDisposed)||settingsOpen)return;
       if(Options.WorkStartCheck&&Options.WorkCheckDate!=DateTime.Today.ToString("yyyy-MM-dd")){Options.WorkCheckDate=DateTime.Today.ToString("yyyy-MM-dd");Persist();ShowWorkCheck();return;}
       List<Rule> rules=Engine.Suggest(now);if(rules!=null){ShowCare(rules,false);return;}
       if(now>=autoContentAfter&&autoNews.IsDue(now)&&!fetching){ShareContent(true,false);return;}
