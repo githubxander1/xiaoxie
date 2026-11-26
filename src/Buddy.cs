@@ -124,7 +124,7 @@ namespace RestBuddy {
       HideBubble();if(coach!=null&&!coach.IsDisposed){coach.Show();return;}if(action==null)return;
       if(Engine.QuietUntil<DateTime.UtcNow.AddMinutes(1))Engine.Quiet(DateTime.UtcNow,1);
       string customText;string customLine=Options.CustomMessages.TryGetValue(action.Key,out customText)&&!String.IsNullOrWhiteSpace(customText)?Words.Message(new List<Rule>{Options.Rules.First(r=>r.Key==action.Key)}):null;
-      Pet.React("stretch");coach=new Coach(action,()=>{if(action.Key!="water"){Engine.Completed(action.Key,DateTime.UtcNow);Engine.SaveProgress(Store.Folder,DateTime.UtcNow);Feedback("completed");}else{HideBubble();Pet.LastWords="饮水提示结束。";}},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea,customLine);coach.Show();history.Add("健康",action.Title+"（"+action.Seconds+" 秒）\n"+(customLine??action.Instructions),automatic?"自动提醒":"手动练习",null,null,false);
+      Pet.React("stretch");coach=new Coach(action,()=>{Engine.Completed(action.Key,DateTime.UtcNow);Engine.SaveProgress(Store.Folder,DateTime.UtcNow);if(action.Key=="water")Pet.LastWords="饮水提示结束。";else Feedback("completed");},automatic,Pet.Visible?Pet.Bounds:Screen.PrimaryScreen.WorkingArea,customLine);coach.Show();history.Add("健康",action.Title+"（"+action.Seconds+" 秒）\n"+(customLine??action.Instructions),automatic?"自动提醒":"手动练习",null,null,false);
     }
     private async Task<ContentItem> FetchNews(bool recent){
       if(Options.DiverseNews){

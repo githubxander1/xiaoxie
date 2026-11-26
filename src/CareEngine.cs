@@ -47,8 +47,7 @@ namespace RestBuddy {
     private double Rank(Rule r,DateTime now){double ratio=effort[r.Key]/threshold[r.Key];return Math.Min(4,lastOffered[r.Key]==DateTime.MinValue?ratio:(now-lastOffered[r.Key]).TotalSeconds/threshold[r.Key])+Priority(r.Key)+(shown[r.Key]==0&&ratio>=1?1.5:0);}
     private Rule PickPrimary(List<Rule> due,DateTime now){
       if(due.Count==0)return null;List<Rule> choices=due.Where(r=>r.Key!=lastPrimary).ToList();if(choices.Count==0)choices=due;
-      double total=choices.Sum(r=>Math.Max(0.1,Rank(r,now)));double draw=random.NextDouble()*total;
-      foreach(Rule rule in choices){draw-=Math.Max(0.1,Rank(rule,now));if(draw<=0)return rule;}return choices.Last();
+      return choices.OrderByDescending(r=>Rank(r,now)).ThenBy(r=>lastOffered[r.Key]).First();
     }
     internal List<Rule> Suggest(DateTime now){
       if(now<QuietUntil||now<feedbackBuffer)return null;
