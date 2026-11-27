@@ -10,7 +10,7 @@
 
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4)
 ![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.8-512BD4)
-![Version](https://img.shields.io/badge/version-0.5.14-527A59)
+![Version](https://img.shields.io/badge/version-0.5.15-527A59)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 [快速开始](#快速开始) · [功能](#功能) · [自动快讯](#自动快讯) · [源码构建](#源码构建) · [数据与隐私](#数据与隐私)
@@ -235,4 +235,5 @@ v0.5.10：关怀状态合并到设置→关怀的每行右侧，显示累计活�
 v0.5.11：多元轮换加入 HelloGitHub 最新月刊项目，也可单独选择。官方 RSS 确定期号，官方 GitHub 月刊提供项目名称、首句介绍及链接；随机选择未读项目，沿用新闻间隔和记录模块。项目缓存 6 小时，沿用数量上限。
 
 v0.5.12：新增「收放」提醒类别，默认 45 分钟，包含坐姿收放、踝泵、伸膝、肩胛放松与轻提踵轮换。旧设置升级时默认开启；提醒和记录均使用「收放」名称。
+
 
