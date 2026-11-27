@@ -11,7 +11,7 @@ using Microsoft.Win32;
 
 [assembly:System.Runtime.CompilerServices.InternalsVisibleTo("RestBuddy.Checks")]
 [assembly:System.Reflection.AssemblyTitle("小歇")]
-[assembly:System.Reflection.AssemblyVersion("0.5.15.0")]
+[assembly:System.Reflection.AssemblyVersion("0.5.16.0")]
 namespace RestBuddy {
   public sealed class Rule {
     public string Key,Name,Message;public int Minutes;public bool Enabled;
@@ -93,5 +93,6 @@ namespace RestBuddy {
     [STAThread]internal static void Main(string[] args){bool created;using(Mutex mutex=new Mutex(true,@"Local\RestBuddy.v010",out created)){if(!created){MessageBox.Show("小歇已在系统托盘运行。","小歇");return;}try{System.Net.ServicePointManager.SecurityProtocol=System.Net.SecurityProtocolType.Tls12;Native.SetProcessDPIAware();Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);Application.Run(new Buddy(args.Contains("--preview")));}catch(Exception e){MessageBox.Show("无法启动："+e.Message,"小歇");}finally{mutex.ReleaseMutex();}}}
   }
 }
+
 
 
